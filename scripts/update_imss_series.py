@@ -8,7 +8,7 @@ Reglas oficiales usadas:
 
 El script nunca reemplaza los CSV con una descarga vacía o inválida.
 """
-import csv, io, json, re, sys, urllib.request, urllib.error
+import csv, io, json, re, sys, os, urllib.request, urllib.error
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from calendar import monthrange
@@ -157,10 +157,14 @@ def main():
     existing_cons=existing_periods(OUT_CONS); existing_sbc=existing_periods(OUT_SBC); existing_total=existing_periods(OUT_TOTAL)
     today=date.today(); end=f'{today.year:04d}-{today.month:02d}'
     missing=[(y,m) for y,m in month_iter(START_PERIOD,end) if not (f'{y:04d}-{m:02d}' in existing_cons and f'{y:04d}-{m:02d}' in existing_sbc and f'{y:04d}-{m:02d}' in existing_total)]
+    total_missing=len(missing)
+    # Priorizar meses recientes y recuperar faltantes gradualmente en cada ejecución.
+    limit=max(1,int(os.getenv('IMSS_MAX_MONTHS_PER_RUN','12')))
+    missing=sorted(missing,reverse=True)[:limit]
     results=[]; found=[]
     # El backfill 2018-actualidad se descarga en paralelo para que la primera ejecución
     # en GitHub Actions no tarde horas. Escritura de archivos se mantiene secuencial.
-    with ThreadPoolExecutor(max_workers=8) as ex:
+    with ThreadPoolExecutor(max_workers=3) as ex:
         futs={ex.submit(fetch_period,y,m,links):(y,m) for y,m in missing}
         for fut in as_completed(futs):
             period,agg,url,errors=fut.result()
@@ -172,8 +176,12 @@ def main():
         merge(OUT_TOTAL,period,{'periodo':period,'puestos_miles':f"{agg['total_thousands']:.3f}",'fuente':'IMSS · Datos Abiertos Asegurados','nota':'Total nacional; se mantiene separado de la serie sectorial de construcción.'},['periodo','puestos_miles','fuente','nota'])
         results.append({'periodo':period,'status':'actualizado','url':url,'filas':agg['rows'],'construccion_miles':round(agg['construction_thousands'],3),'sbc':round(agg['sbc'],2)})
     results.sort(key=lambda x:x['periodo'])
-    status={'inicio_historico':START_PERIOD,'updated_by':'GitHub Actions / IMSS Datos Abiertos','regla_sector':'sector_economico_1 = 4','regla_sbc':'sum(masa_sal_ta) / sum(ta_sal)','meses_faltantes_al_inicio':len(missing),'resultados':results}
+    status={'inicio_historico':START_PERIOD,'updated_by':'GitHub Actions / IMSS Datos Abiertos','regla_sector':'sector_economico_1 = 4','regla_sbc':'sum(masa_sal_ta) / sum(ta_sal)','meses_faltantes_al_inicio':total_missing,'meses_intentados':len(missing),'meses_actualizados':len(found),'resultados':results}
     STATUS.write_text(json.dumps(status,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(status,ensure_ascii=False,indent=2))
+    if not found and missing:
+        raise SystemExit('IMSS: ningún mes pudo descargarse; se conserva histórico anterior')
 
 if __name__=='__main__': main()
+
+        
