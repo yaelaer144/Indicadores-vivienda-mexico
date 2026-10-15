@@ -2,10 +2,10 @@
 import csv,json,os,re,statistics,unicodedata,urllib.request,urllib.parse
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-TOKEN=os.environ.get('INEGI_API_TOKEN','').strip()
+TOKEN=os.environ.get('INEGI_API_TOKEN','').strip().strip('\"').strip("'")
 START='2016-01'
-API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/BIE/2.0/{token}?type=json'
-CAT='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/CL_INDICATOR/null/es/BIE/2.0/{token}?type=json'
+API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/BIE-BISE/2.0/{token}?type=json'
+CAT='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/CL_INDICATOR/null/es/BIE-BISE/2.0/{token}?type=json'
 UA='dashboard-vivienda-infonavit/3.0'
 RES=ROOT/'inegi_resolved_ids.json'
 
