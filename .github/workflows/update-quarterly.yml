@@ -1,0 +1,39 @@
+name: Publicaciones trimestrales PIB ENOE SHF
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '40 13 20 2,5,8,11 *'
+permissions:
+  contents: write
+concurrency:
+  group: vivienda-actualizacion
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependencias
+        run: python -m pip install openpyxl pypdf
+      - name: Ejecutar consultas y registrar fallos
+        env:
+          INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
+        run: |
+          python scripts/run_group.py quarterly update_inegi_series.py:quarterly update_enoe_inegi.py update_shf_index.py
+      - name: Regenerar datos y auditar histórico
+        if: always()
+        run: |
+          python scripts/rebuild_local_data.py
+          python scripts/audit_coverage.py
+      - name: Registrar actualizaciones
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- '*.csv' '*.json' 'local-data.js'
+          git diff --cached --quiet || (git commit -m "Actualización por frecuencia: ${{ github.workflow }}" && git push)
