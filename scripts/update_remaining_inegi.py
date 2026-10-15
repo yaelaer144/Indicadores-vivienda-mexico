@@ -4,7 +4,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 TOKEN=os.environ.get('INEGI_API_TOKEN','').strip().strip('\"').strip("'")
 START='2016-01'
-API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/BIE-BISE/2.0/{token}?type=json'
+API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/BISE/2.0/{token}?type=json'
 CAT='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/CL_INDICATOR/null/es/BIE-BISE/2.0/{token}?type=json'
 UA='dashboard-vivienda-infonavit/3.0'
 RES=ROOT/'inegi_resolved_ids.json'
@@ -112,3 +112,4 @@ def main():
  RES.write_text(json.dumps(resolved,ensure_ascii=False,indent=2),encoding='utf-8')
  (ROOT/'remaining_inegi_update_status.json').write_text(json.dumps(status,indent=2),encoding='utf-8')
 if __name__=='__main__':main()
+
