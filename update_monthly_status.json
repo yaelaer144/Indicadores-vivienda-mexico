@@ -1,0 +1,41 @@
+{
+  "group": "monthly",
+  "run_at_utc": "2026-10-15T15:58:26.719722+00:00",
+  "results": [
+    {
+      "script": "update_inegi_series.py",
+      "group": "monthly",
+      "exit_code": 1,
+      "status": "error"
+    },
+    {
+      "script": "update_remaining_inegi.py",
+      "group": null,
+      "exit_code": 1,
+      "status": "error"
+    },
+    {
+      "script": "update_imss_series.py",
+      "group": null,
+      "exit_code": 0,
+      "status": "ok"
+    },
+    {
+      "script": "update_ruv_flow.py",
+      "group": null,
+      "exit_code": 1,
+      "status": "error"
+    },
+    {
+      "script": "update_sniiv_kpis.py",
+      "group": null,
+      "exit_code": 0,
+      "status": "ok"
+    }
+  ],
+  "failed": [
+    "update_inegi_series.py",
+    "update_remaining_inegi.py",
+    "update_ruv_flow.py"
+  ]
+}
