@@ -17,7 +17,7 @@ START_QUARTER='2018-T1'
 START_YEAR='2016'
 TOKEN=os.environ.get('INEGI_API_TOKEN','').strip().strip('\"').strip("'")
 API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/BIE-BISE/2.0/{token}?type=json'
-CAT='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/CL_INDICATOR/null/es/BIE-BISE/2.0/{token}?type=json'
+CAT='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/CL_INDICATOR/null/es/BISE/2.0/{token}?type=json'
 UA='dashboard-vivienda-infonavit/2.0 (+GitHub Actions)'
 RESOLVED=ROOT/'inegi_resolved_ids.json'
 STATUS=ROOT/'auto_update_status.json'
