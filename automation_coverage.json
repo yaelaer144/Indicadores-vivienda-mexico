@@ -1,132 +1,132 @@
 {
-  "generated_at": "2026-10-07T16:06:10",
-  "objetivo": "series económicas/laborales desde 2018 cuando la metodología/fuente lo permite",
+  "generated_at": "2026-10-15T15:51:19",
+  "objetivo": "Preferencia 2016; alternativa 2018 cuando la serie validada no tenga histórico anterior o cambie metodología",
   "series": [
     {
       "archivo": "igae_construccion_mensual.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2025-01",
       "ultimo_periodo": "2026-06",
       "observaciones": 18,
-      "historico_desde_2018": "pendiente_backfill"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "imai_construccion_mensual.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2021-01",
       "ultimo_periodo": "2026-06",
       "observaciones": 66,
-      "historico_desde_2018": "pendiente_backfill"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "ifb_residencial_mensual.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2018-01",
       "ultimo_periodo": "2026-06",
       "observaciones": 102,
-      "historico_desde_2018": "completo"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "icc_incevis_base2025_mensual.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2018-01",
       "ultimo_periodo": "2026-08",
       "observaciones": 104,
-      "historico_desde_2018": "completo"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "inpp_construccion_edificacion_base2025_mensual.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2018-01",
       "ultimo_periodo": "2026-08",
       "observaciones": 104,
-      "historico_desde_2018": "completo"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "enec_indices_laborales_mensual.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2018-01",
       "ultimo_periodo": "2026-04",
       "observaciones": 100,
-      "historico_desde_2018": "completo"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "enec_actividad_historica.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2018-01",
       "ultimo_periodo": "2026-04",
       "observaciones": 100,
-      "historico_desde_2018": "completo"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "enec_personal_tipo_variacion_mensual.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2024-01",
       "ultimo_periodo": "2026-04",
       "observaciones": 28,
-      "historico_desde_2018": "pendiente_backfill"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "enec_vivienda_yoy.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2024-01",
       "ultimo_periodo": "2026-04",
       "observaciones": 28,
-      "historico_desde_2018": "pendiente_backfill"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "enec_edificacion_variacion_mensual.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2024-01",
       "ultimo_periodo": "2026-06",
       "observaciones": 30,
-      "historico_desde_2018": "pendiente_backfill"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "imss_construccion_mensual.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2023-07",
       "ultimo_periodo": "2026-03",
       "observaciones": 33,
-      "historico_desde_2018": "pendiente_backfill"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "imss_sbc_construccion_mensual.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2018-01",
       "ultimo_periodo": "2026-06",
       "observaciones": 102,
-      "historico_desde_2018": "completo"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "imss_total_mensual.csv",
       "frecuencia": "mensual",
-      "objetivo_inicio": "2018-01",
+      "objetivo_inicio": "2016-01",
       "primer_periodo": "2026-04",
       "ultimo_periodo": "2026-08",
       "observaciones": 4,
-      "historico_desde_2018": "pendiente_backfill"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "enoe_construccion_trimestral.csv",
       "frecuencia": "trimestral",
-      "objetivo_inicio": "2018-T1",
+      "objetivo_inicio": "2016-T1",
       "primer_periodo": "2023-T1",
       "ultimo_periodo": "2026-T2",
       "observaciones": 14,
-      "historico_desde_2018": "pendiente_backfill"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "vab_construccion_subsectores_trimestral.csv",
@@ -135,54 +135,62 @@
       "primer_periodo": "2018-T1",
       "ultimo_periodo": "2026-T2",
       "observaciones": 34,
-      "historico_desde_2018": "completo"
+      "cobertura_objetivo": "completo"
     },
     {
       "archivo": "ruv_flujo_vivienda_anual.csv",
       "frecuencia": "anual",
-      "objetivo_inicio": "2018",
+      "objetivo_inicio": "2016",
       "primer_periodo": "2018",
       "ultimo_periodo": "2025",
       "observaciones": 8,
-      "historico_desde_2018": "completo"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "bridge_financing_anual.csv",
       "frecuencia": "anual",
-      "objetivo_inicio": "2018",
+      "objetivo_inicio": "2016",
       "primer_periodo": "2018",
       "ultimo_periodo": "2025",
       "observaciones": 8,
-      "historico_desde_2018": "completo"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "shf_indice_trimestral.csv",
       "frecuencia": "trimestral",
-      "objetivo_inicio": "2018-T1",
+      "objetivo_inicio": "2016-T1",
       "primer_periodo": "2022-T1",
       "ultimo_periodo": "2026-T2",
       "observaciones": 18,
-      "historico_desde_2018": "pendiente_backfill"
+      "cobertura_objetivo": "pendiente_backfill"
     },
     {
       "archivo": "csvm_pib_vivienda_anual.csv",
       "frecuencia": "anual",
-      "objetivo_inicio": "2018",
+      "objetivo_inicio": "2016",
       "primer_periodo": "2013",
       "ultimo_periodo": "2024",
       "observaciones": 12,
-      "historico_desde_2018": "completo"
+      "cobertura_objetivo": "completo"
     }
   ],
   "pendientes": [
     "igae_construccion_mensual.csv",
     "imai_construccion_mensual.csv",
+    "ifb_residencial_mensual.csv",
+    "icc_incevis_base2025_mensual.csv",
+    "inpp_construccion_edificacion_base2025_mensual.csv",
+    "enec_indices_laborales_mensual.csv",
+    "enec_actividad_historica.csv",
     "enec_personal_tipo_variacion_mensual.csv",
     "enec_vivienda_yoy.csv",
     "enec_edificacion_variacion_mensual.csv",
     "imss_construccion_mensual.csv",
+    "imss_sbc_construccion_mensual.csv",
     "imss_total_mensual.csv",
     "enoe_construccion_trimestral.csv",
+    "ruv_flujo_vivienda_anual.csv",
+    "bridge_financing_anual.csv",
     "shf_indice_trimestral.csv"
   ]
 }
