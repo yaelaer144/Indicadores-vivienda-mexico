@@ -16,8 +16,8 @@ START_MONTH='2016-01'
 START_QUARTER='2018-T1'
 START_YEAR='2016'
 TOKEN=os.environ.get('INEGI_API_TOKEN','').strip().strip('\"').strip("'")
-API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/BIE-BISE/2.0/{token}?type=json'
-CAT='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/CL_INDICATOR/null/es/BISE/2.0/{token}?type=json'
+API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/BISE/2.0/{token}?type=json'
+CAT='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/CL_INDICATOR/null/es/BIE-BISE/2.0/{token}?type=json'
 UA='dashboard-vivienda-infonavit/2.0 (+GitHub Actions)'
 RESOLVED=ROOT/'inegi_resolved_ids.json'
 STATUS=ROOT/'auto_update_status.json'
@@ -126,6 +126,7 @@ def resolve(key, include, exclude, expected, path, period_col, value_col, catalo
     scored.sort(reverse=True,key=lambda x:x[0])
     ids += [x[1] for x in scored[:max_candidates] if x[1]]
     ids=list(dict.fromkeys(ids))
+    if not ids: raise RuntimeError(f'{key}: falta ID validado; el catálogo de INEGI no responde y no se puede resolver automáticamente')
     old=read_csv(path)
     best=None
     for iid in ids:
@@ -236,7 +237,10 @@ def main():
     resolved=load_resolved(); catalog=load_catalog(); report={}
     group=os.environ.get('INEGI_UPDATE_GROUP','all').strip().lower()
     if group in ('all','monthly'):
-        report['precios']={'ultimo':update_prices(),'ids':PRICE_IDS}
+        try:
+            report['precios']={'status':'actualizado','ultimo':update_prices(),'ids':PRICE_IDS}
+        except Exception as exc:
+            report['precios']={'status':'error','error':str(exc)}
     tasks=[
       ('igae',lambda:update_simple_monthly('igae_construccion_mensual.csv','igae_construccion',{'include':['indicador global de la actividad economica','construccion'],'exclude':['variacion porcentual']},catalog,resolved)),
       ('imai',lambda:update_simple_monthly('imai_construccion_mensual.csv','imai_construccion',{'include':['indicador mensual de la actividad industrial','construccion'],'exclude':['variacion porcentual']},catalog,resolved)),
@@ -255,7 +259,10 @@ def main():
     report['updated_by']='GitHub Actions / INEGI API'
     STATUS.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(report,ensure_ascii=False,indent=2))
+    errors=[k for k,v in report.items() if isinstance(v,dict) and v.get('status') in ('error','conservado_sin_cambio')]
+    if errors: raise SystemExit('INEGI: series sin actualizar: '+', '.join(errors))
     if any(isinstance(v,dict) and v.get('status')=='conservado_sin_cambio' for v in report.values()):
         raise SystemExit('Algunas series INEGI no se actualizaron; consulte auto_update_status.json')
 
 if __name__=='__main__': main()
+
