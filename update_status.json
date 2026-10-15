@@ -1,0 +1,185 @@
+{
+  "last_verification": "2026-09-17T12:32:00-06:00",
+  "overall_status": "verified_with_source_lags",
+  "publication_policy": "Versión v5 validada en estructura y consistencia interna; no se interpolan faltantes y se conservan los cortes oficiales disponibles por fuente.",
+  "sources": [
+    {
+      "id": "inegi_igae_construccion",
+      "label": "IGAE construcción",
+      "provider": "INEGI",
+      "frequency": "mensual",
+      "mode": "inegi_api",
+      "unit": "índice base 2018=100",
+      "published_latest_period": "2026-06",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    },
+    {
+      "id": "inegi_ifb_residencial",
+      "label": "IFB construcción residencial",
+      "provider": "INEGI",
+      "frequency": "mensual",
+      "mode": "inegi_api",
+      "unit": "índice base 2018=100",
+      "published_latest_period": "2026-06",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    },
+    {
+      "id": "inegi_imai_construccion",
+      "label": "IMAI construcción",
+      "provider": "INEGI",
+      "frequency": "mensual",
+      "mode": "inegi_api",
+      "unit": "índice base 2018=100",
+      "published_latest_period": "2026-06",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    },
+    {
+      "id": "inegi_enec_personal_construccion",
+      "label": "ENEC personal ocupado construcción",
+      "provider": "INEGI ENEC",
+      "frequency": "mensual",
+      "mode": "inegi_api",
+      "unit": "índice 2018=100",
+      "published_latest_period": "2026-06",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    },
+    {
+      "id": "inegi_enec_horas_construccion",
+      "label": "ENEC horas trabajadas construcción",
+      "provider": "INEGI ENEC",
+      "frequency": "mensual",
+      "mode": "inegi_api",
+      "unit": "índice 2018=100",
+      "published_latest_period": "2026-06",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    },
+    {
+      "id": "inegi_enec_rem_construccion",
+      "label": "ENEC remuneraciones medias construcción",
+      "provider": "INEGI ENEC",
+      "frequency": "mensual",
+      "mode": "inegi_api",
+      "unit": "índice 2018=100",
+      "published_latest_period": "2026-06",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    },
+    {
+      "id": "enoe_construccion",
+      "label": "Población ocupada en construcción",
+      "provider": "INEGI ENOE vía Data México",
+      "frequency": "trimestral",
+      "mode": "datamexico_api",
+      "unit": "miles de personas",
+      "published_latest_period": "2026-T2",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    },
+    {
+      "id": "imss_empleo_construccion",
+      "label": "Puestos IMSS construcción",
+      "provider": "IMSS",
+      "frequency": "mensual",
+      "mode": "official_file_feed",
+      "unit": "miles de puestos",
+      "published_latest_period": "2026-03",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    },
+    {
+      "id": "imss_sbc_construccion",
+      "label": "SBC diario promedio construcción",
+      "provider": "IMSS",
+      "frequency": "mensual",
+      "mode": "manual_controlado",
+      "unit": "pesos diarios",
+      "published_latest_period": "2026-06",
+      "status": "verificado_local",
+      "detail": "No se consultó internet en este ciclo."
+    },
+    {
+      "id": "shf_indice_precios",
+      "label": "Índice SHF de precios de la vivienda",
+      "provider": "SHF",
+      "frequency": "trimestral",
+      "mode": "official_file_feed",
+      "unit": "%",
+      "published_latest_period": "2026-T2",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    },
+    {
+      "id": "enigh_tenencia",
+      "label": "Tenencia de la vivienda",
+      "provider": "INEGI ENIGH",
+      "frequency": "bienal",
+      "mode": "manual_controlado",
+      "unit": "% de viviendas",
+      "published_latest_period": "2024",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    },
+    {
+      "id": "condiciones_habitacionales",
+      "label": "Carencias habitacionales",
+      "provider": "INEGI / ENIGH",
+      "frequency": "bienal",
+      "mode": "manual_controlado",
+      "unit": "% de la población",
+      "published_latest_period": "2024",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    },
+    {
+      "id": "ruv_sniiv_produccion",
+      "label": "Producción y composición de vivienda RUV",
+      "provider": "SEDATU / SNIIV / RUV",
+      "frequency": "mensual",
+      "mode": "sniiv_api",
+      "unit": "viviendas y porcentaje",
+      "published_latest_period": "2025-12",
+      "status": "verificado_local",
+      "detail": "No se consultó internet en este ciclo."
+    },
+    {
+      "id": "inpp_componentes_construccion",
+      "label": "INPP componentes del costo de construcción",
+      "provider": "INEGI INPP",
+      "frequency": "mensual",
+      "mode": "official_file_feed",
+      "unit": "índice / variación anual %",
+      "published_latest_period": "2026-08",
+      "status": "verificado_local",
+      "detail": "Corte revisado al 11-sep-2026. Se conserva el último dato homogéneo disponible para esta serie."
+    }
+  ],
+  "validation": {
+    "errors": [],
+    "warnings": [],
+    "stats": {
+      "series_rows": 923,
+      "unique_series_keys": 923,
+      "map_entities": 32,
+      "enec_activity_rows": 100,
+      "enec_housing_rows": 28,
+      "enec_worker_type_rows": 28,
+      "ruv_characteristic_rows": 26,
+      "tenure_sum": 100.0,
+      "warnings": 0,
+      "errors": 0
+    }
+  },
+  "reviewed_on": "2026-09-11",
+  "warnings": [
+    "IMAI julio 2026 estaba calendarizado para publicarse el 11-sep-2026; al momento de la revisión matutina aún no estaba disponible en la página consultada, por lo que se conserva junio.",
+    "IMSS: el total nacional llega a agosto de 2026; la serie sectorial desagregada de construcción local llega a marzo y no se rellena con el total nacional.",
+    "ENEC: la publicación oficial llega a junio de 2026. Algunas series históricas de nivel del proyecto conservan un corte anterior; la variación mensual de producción sí llega a junio.",
+    "ICC: se evita extender el antiguo índice nacional base julio-2019 con datos incompatibles; la vista principal usa variación anual mensual reciente de construcción residencial, con último corte julio de 2026.",
+    "PIB, ENOE y SHF permanecen en 2T-2026 por periodicidad; ENIGH permanece en 2024 por periodicidad bienal."
+  ]
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "bloque": "Actividad económica",
+    "fuente": "INEGI",
+    "detalle": "PIB/VAB trimestral base 2018: Construcción y subsectores Edificación, Obras de ingeniería civil y Trabajos especializados; IGAE e indicadores de construcción."
+  },
+  {
+    "bloque": "Mercado laboral",
+    "fuente": "INEGI ENOE / ENEC; IMSS",
+    "detalle": "Población ocupada en construcción y total nacional ENOE, índices ENEC y SBC IMSS; el SBC se expresa como equivalente mensual (diario × 30.4)."
+  },
+  {
+    "bloque": "Producción",
+    "fuente": "RUV / SNIIV / CONAVI",
+    "detalle": "Registro, inicio, producción e inventario de vivienda"
+  },
+  {
+    "bloque": "Precios",
+    "fuente": "SHF / INEGI",
+    "detalle": "Índice SHF; ICC/Construcción residencial por ciudad (antes INCEVIS) nacional y subíndices; INPP Construcción y Edificación, base julio 2025=100."
+  },
+  {
+    "bloque": "Condiciones habitacionales",
+    "fuente": "INEGI ENIGH / INEGI pobreza multidimensional / CONAVI",
+    "detalle": "Tenencia ENIGH 2016–2024 en cuatro categorías; comparación rural/urbana 2024 con agrupación propia + pagándose vs no propia; carencias, materiales y déficit cualitativo."
+  },
+  {
+    "bloque": "Financiamiento a la construcción",
+    "fuente": "CNBV",
+    "detalle": "Series Históricas de Banca Múltiple; tasa de crédito puente para construcción de vivienda. Actualización automatizada con validación conservadora."
+  }
+]

@@ -1,0 +1,5 @@
+etapa,viviendas,periodo,relacion,fuente
+Contratadas,604000,2026-06-15,avance acumulado del PVB al corte; universo contratado hacia la meta sexenal; incluye viviendas ya en construcción,SEDATU / Presidencia de la República
+En construcción,274000,2026-06-15,avance acumulado del PVB al corte; subconjunto de las contratadas; referencia meta sexenal,SEDATU / Presidencia de la República
+Entregadas,24500,2026-06-15,avance acumulado del PVB al corte; etapa reportada por Presidencia; no sumar a contratadas ni construcción,Presidencia de la República
+Meta sexenal,1800000,2026-06-15,meta sexenal PVB,SEDATU / Presidencia de la República

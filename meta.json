@@ -1,0 +1,12 @@
+{
+  "generated": "2026-09-17",
+  "title": "Indicadores de Vivienda y Construcción Residencial en México",
+  "reviewed_on": "2026-09-17",
+  "notes": [
+    "Ajustes v5 cerrados el 17 de septiembre de 2026.",
+    "No se interpolan ni estiman observaciones faltantes.",
+    "ENOE construcción y ocupación total se muestran con ejes separados.",
+    "Tenencia histórica se presenta como composición apilada de cuatro categorías."
+  ],
+  "last_patch": "2026-09-17 v5: ENOE dual axis, SHF-ICC alignment, SBC monthly equivalent, tenure stacked"
+}

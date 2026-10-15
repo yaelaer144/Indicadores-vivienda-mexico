@@ -1,0 +1,331 @@
+[
+  {
+    "archivo": "bridge_financing_anual.csv",
+    "primer_periodo": "2018",
+    "ultimo_periodo": "2025",
+    "frecuencia_consulta": "bimonthly",
+    "observaciones": 8
+  },
+  {
+    "archivo": "condiciones_historicas.csv",
+    "primer_periodo": "2016",
+    "ultimo_periodo": "2024",
+    "frecuencia_consulta": "semiannual",
+    "observaciones": 5
+  },
+  {
+    "archivo": "condiciones_resumen_2024.csv",
+    "primer_periodo": "2024",
+    "ultimo_periodo": "2024",
+    "frecuencia_consulta": "semiannual",
+    "observaciones": 1
+  },
+  {
+    "archivo": "csvm_pib_vivienda_anual.csv",
+    "primer_periodo": "2013",
+    "ultimo_periodo": "2024",
+    "frecuencia_consulta": "annual",
+    "observaciones": 12
+  },
+  {
+    "archivo": "enec_actividad_historica.csv",
+    "primer_periodo": "2018-01",
+    "ultimo_periodo": "2026-04",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 100
+  },
+  {
+    "archivo": "enec_edificacion_variacion_mensual.csv",
+    "primer_periodo": "2024-01",
+    "ultimo_periodo": "2026-06",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 30
+  },
+  {
+    "archivo": "enec_indices_laborales_mensual.csv",
+    "primer_periodo": "2018-01",
+    "ultimo_periodo": "2026-04",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 100
+  },
+  {
+    "archivo": "enec_personal_tipo_variacion_mensual.csv",
+    "primer_periodo": "2024-01",
+    "ultimo_periodo": "2026-04",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 28
+  },
+  {
+    "archivo": "enec_vivienda_yoy.csv",
+    "primer_periodo": "2024-01",
+    "ultimo_periodo": "2026-04",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 28
+  },
+  {
+    "archivo": "enoe_construccion_historico_anual.csv",
+    "primer_periodo": "2018",
+    "ultimo_periodo": "2025",
+    "frecuencia_consulta": "",
+    "observaciones": 8
+  },
+  {
+    "archivo": "enoe_construccion_trimestral.csv",
+    "primer_periodo": "2023-T1",
+    "ultimo_periodo": "2026-T2",
+    "frecuencia_consulta": "quarterly",
+    "observaciones": 14
+  },
+  {
+    "archivo": "icc_ciudad_historico_anual.csv",
+    "primer_periodo": null,
+    "ultimo_periodo": null,
+    "frecuencia_consulta": "monthly",
+    "observaciones": 0
+  },
+  {
+    "archivo": "icc_incevis_base2025_mensual.csv",
+    "primer_periodo": "2018-01",
+    "ultimo_periodo": "2026-08",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 104
+  },
+  {
+    "archivo": "icc_residencial_mensual.csv",
+    "primer_periodo": "2024-01",
+    "ultimo_periodo": "2025-07",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 19
+  },
+  {
+    "archivo": "icc_residencial_variacion_anual_mensual.csv",
+    "primer_periodo": "2025-01",
+    "ultimo_periodo": "2026-06",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 12
+  },
+  {
+    "archivo": "icc_subindices_historico_anual.csv",
+    "primer_periodo": "2016",
+    "ultimo_periodo": "2023",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 8
+  },
+  {
+    "archivo": "icc_subindices_mensual.csv",
+    "primer_periodo": "2024-01",
+    "ultimo_periodo": "2025-07",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 19
+  },
+  {
+    "archivo": "icc_subindices_ultimos_oficial.csv",
+    "primer_periodo": "2026-07",
+    "ultimo_periodo": "2026-07",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 1
+  },
+  {
+    "archivo": "icc_trimestral.csv",
+    "primer_periodo": "2025-T1",
+    "ultimo_periodo": "2025-T2",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 2
+  },
+  {
+    "archivo": "ifb_residencial_mensual.csv",
+    "primer_periodo": "2018-01",
+    "ultimo_periodo": "2026-06",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 102
+  },
+  {
+    "archivo": "igae_construccion_mensual.csv",
+    "primer_periodo": "2025-01",
+    "ultimo_periodo": "2026-06",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 18
+  },
+  {
+    "archivo": "imai_construccion_mensual.csv",
+    "primer_periodo": "2021-01",
+    "ultimo_periodo": "2026-06",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 66
+  },
+  {
+    "archivo": "imss_construccion_mensual.csv",
+    "primer_periodo": "2023-07",
+    "ultimo_periodo": "2026-03",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 33
+  },
+  {
+    "archivo": "imss_sbc_construccion_mensual.csv",
+    "primer_periodo": "2018-01",
+    "ultimo_periodo": "2026-06",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 102
+  },
+  {
+    "archivo": "imss_total_mensual.csv",
+    "primer_periodo": "2026-04",
+    "ultimo_periodo": "2026-08",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 4
+  },
+  {
+    "archivo": "inpp_componentes_construccion_mensual.csv",
+    "primer_periodo": null,
+    "ultimo_periodo": null,
+    "frecuencia_consulta": "monthly",
+    "observaciones": 0
+  },
+  {
+    "archivo": "inpp_construccion_edificacion_base2025_mensual.csv",
+    "primer_periodo": "2018-01",
+    "ultimo_periodo": "2026-08",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 104
+  },
+  {
+    "archivo": "inpp_construccion_mensual.csv",
+    "primer_periodo": "2024-01",
+    "ultimo_periodo": "2026-08",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 32
+  },
+  {
+    "archivo": "inpp_construccion_trimestral.csv",
+    "primer_periodo": "2025-T1",
+    "ultimo_periodo": "2026-T2",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 6
+  },
+  {
+    "archivo": "inpp_construccion_ultimo.csv",
+    "primer_periodo": "2026-07",
+    "ultimo_periodo": "2026-07",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 1
+  },
+  {
+    "archivo": "pib_construccion_trimestral.csv",
+    "primer_periodo": "2025-T1",
+    "ultimo_periodo": "2026-T2",
+    "frecuencia_consulta": "quarterly",
+    "observaciones": 6
+  },
+  {
+    "archivo": "precios_historicos_2019_2024.csv",
+    "primer_periodo": "2019",
+    "ultimo_periodo": "2024",
+    "frecuencia_consulta": "",
+    "observaciones": 6
+  },
+  {
+    "archivo": "pvb_avance.csv",
+    "primer_periodo": "2026-06-15",
+    "ultimo_periodo": "2026-06-15",
+    "frecuencia_consulta": "weekly",
+    "observaciones": 1
+  },
+  {
+    "archivo": "pvb_avance_20260615.csv",
+    "primer_periodo": "2026-06-15",
+    "ultimo_periodo": "2026-06-15",
+    "frecuencia_consulta": "weekly",
+    "observaciones": 1
+  },
+  {
+    "archivo": "ruv_flujo_vivienda_anual.csv",
+    "primer_periodo": "2018",
+    "ultimo_periodo": "2025",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 8
+  },
+  {
+    "archivo": "series_historicas.csv",
+    "primer_periodo": "2013",
+    "ultimo_periodo": "2026-06-15",
+    "frecuencia_consulta": "",
+    "observaciones": 117
+  },
+  {
+    "archivo": "shf_indice_nivel_trimestral.csv",
+    "primer_periodo": null,
+    "ultimo_periodo": null,
+    "frecuencia_consulta": "quarterly",
+    "observaciones": 0
+  },
+  {
+    "archivo": "shf_indice_trimestral.csv",
+    "primer_periodo": "2022-T1",
+    "ultimo_periodo": "2026-T2",
+    "frecuencia_consulta": "quarterly",
+    "observaciones": 18
+  },
+  {
+    "archivo": "shf_precios_entidad.csv",
+    "primer_periodo": "2T 2026",
+    "ultimo_periodo": "2T 2026",
+    "frecuencia_consulta": "quarterly",
+    "observaciones": 1
+  },
+  {
+    "archivo": "sniiv_kpis.csv",
+    "primer_periodo": "2026-06-15",
+    "ultimo_periodo": "2026-06-30",
+    "frecuencia_consulta": "monthly",
+    "observaciones": 2
+  },
+  {
+    "archivo": "tenencia_2024.csv",
+    "primer_periodo": "2024",
+    "ultimo_periodo": "2024",
+    "frecuencia_consulta": "semiannual",
+    "observaciones": 1
+  },
+  {
+    "archivo": "tenencia_historica.csv",
+    "primer_periodo": "2016",
+    "ultimo_periodo": "2024",
+    "frecuencia_consulta": "semiannual",
+    "observaciones": 5
+  },
+  {
+    "archivo": "tenencia_rural_urbano_2024.csv",
+    "primer_periodo": null,
+    "ultimo_periodo": null,
+    "frecuencia_consulta": "semiannual",
+    "observaciones": 0
+  },
+  {
+    "archivo": "vab_construccion_anual_real.csv",
+    "primer_periodo": "2018",
+    "ultimo_periodo": "2024",
+    "frecuencia_consulta": "",
+    "observaciones": 7
+  },
+  {
+    "archivo": "vab_construccion_subsectores_trimestral.csv",
+    "primer_periodo": "2018-T1",
+    "ultimo_periodo": "2026-T2",
+    "frecuencia_consulta": "quarterly",
+    "observaciones": 34
+  },
+  {
+    "archivo": "vab_edificacion_componentes_anual.csv",
+    "primer_periodo": null,
+    "ultimo_periodo": null,
+    "frecuencia_consulta": "",
+    "observaciones": 0
+  },
+  {
+    "archivo": "vab_edificacion_trimestral.csv",
+    "primer_periodo": "2023-T1",
+    "ultimo_periodo": "2026-T2",
+    "frecuencia_consulta": "",
+    "observaciones": 14
+  }
+]

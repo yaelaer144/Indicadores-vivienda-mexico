@@ -1,0 +1,6 @@
+indicador,valor,periodo,fuente
+ruv_inventory,388934,2026-06-30,SEDATU / SNIIV · Inventario de vivienda
+financing_total,340096,2026-06-30,SEDATU / SNIIV · Financiamientos
+pvb_conavi_housing,73490,2026-06-15,CONAVI · PVB
+pvb_conavi_hectares,560,2026-06-15,CONAVI · PVB
+pvb_conavi_predios,138,2026-06-15,CONAVI · PVB
