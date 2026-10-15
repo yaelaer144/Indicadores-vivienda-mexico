@@ -12,6 +12,7 @@ import csv, json, sys
 from datetime import datetime
 from pathlib import Path
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'ruv_flujo_vivienda_anual.csv'
@@ -79,18 +80,25 @@ def validate(new, old):
 def main():
     old=read_old()
     reg,u1=get_json('GetRegistro')
-    ver,u2=get_json('GetVerficacion')
+    # La API ha publicado dos grafías para el endpoint de verificación.
+    try:
+        ver,u2=get_json('GetVerificacion')
+    except HTTPError as e:
+        if e.code != 404: raise
+        ver,u2=get_json('GetVerficacion')
     prod,u3=get_json('GetProduccion')
     A,B,C=aggregate(reg),aggregate(ver),aggregate(prod)
     years=sorted(set(A)&set(B)&set(C))
     new={y:[A[y]/1000,B[y]/1000,C[y]/1000] for y in years if y>=START}
     validate(new,old)
     # Para años cerrados usamos API; para un año corriente parcial también se conserva y se identifica como tal en status.
-    with OUT.open('w',encoding='utf-8',newline='') as f:
+    tmp=OUT.with_suffix('.csv.tmp')
+    with tmp.open('w',encoding='utf-8',newline='') as f:
         w=csv.writer(f); w.writerow(['anio','registradas_miles','inicio_obra_miles','terminadas_miles','fuente'])
         for y in sorted(new):
             a,b,c=new[y]
             w.writerow([y,f'{a:.3f}'.rstrip('0').rstrip('.'),f'{b:.3f}'.rstrip('0').rstrip('.'),f'{c:.3f}'.rstrip('0').rstrip('.'),'SEDATU / SNIIV / RUV (API)'])
+    tmp.replace(OUT)
     STATUS.write_text(json.dumps({'updated_at':datetime.now().isoformat(timespec='seconds'),'start_year':START,'latest_year':max(new) if new else None,'endpoints':[u1,u2,u3],'rows':len(new),'status':'ok'},ensure_ascii=False,indent=2),encoding='utf-8')
     print(f'RUV actualizado: {len(new)} años, {min(new)}-{max(new)}')
 
