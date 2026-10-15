@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-15T15:58:26",
+  "generated_at": "2026-10-15T17:57:42",
   "objetivo": "Preferencia 2016; alternativa 2018 cuando la serie validada no tenga histórico anterior o cambie metodología",
   "series": [
     {
@@ -141,10 +141,10 @@
       "archivo": "ruv_flujo_vivienda_anual.csv",
       "frecuencia": "anual",
       "objetivo_inicio": "2016",
-      "primer_periodo": "2018",
-      "ultimo_periodo": "2025",
-      "observaciones": 8,
-      "cobertura_objetivo": "pendiente_backfill"
+      "primer_periodo": "2016",
+      "ultimo_periodo": "2026",
+      "observaciones": 11,
+      "cobertura_objetivo": "completo"
     },
     {
       "archivo": "bridge_financing_anual.csv",
@@ -189,7 +189,6 @@
     "imss_sbc_construccion_mensual.csv",
     "imss_total_mensual.csv",
     "enoe_construccion_trimestral.csv",
-    "ruv_flujo_vivienda_anual.csv",
     "bridge_financing_anual.csv",
     "shf_indice_trimestral.csv"
   ]
