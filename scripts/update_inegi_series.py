@@ -15,9 +15,9 @@ ROOT=Path(__file__).resolve().parents[1]
 START_MONTH='2016-01'
 START_QUARTER='2018-T1'
 START_YEAR='2016'
-TOKEN=os.environ.get('INEGI_API_TOKEN','').strip()
-API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/BIE/2.0/{token}?type=json'
-CAT='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/CL_INDICATOR/null/es/BIE/2.0/{token}?type=json'
+TOKEN=os.environ.get('INEGI_API_TOKEN','').strip().strip('\"').strip("'")
+API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/BIE-BISE/2.0/{token}?type=json'
+CAT='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/CL_INDICATOR/null/es/BIE-BISE/2.0/{token}?type=json'
 UA='dashboard-vivienda-infonavit/2.0 (+GitHub Actions)'
 RESOLVED=ROOT/'inegi_resolved_ids.json'
 STATUS=ROOT/'auto_update_status.json'
@@ -90,7 +90,9 @@ def load_resolved():
 
 def load_catalog():
     d=get_json(CAT.format(token=TOKEN))
-    return d.get('CODE') or []
+    codes=d.get('CODE') or []
+    if not codes: raise RuntimeError('INEGI: catálogo sin indicadores; comprobar fuente y token')
+    return codes
 
 def candidate_score(desc, include, exclude):
     n=norm(desc)
@@ -158,11 +160,13 @@ def update_prices():
     periods=sorted(set(S['general']) & set(S['materiales']) & set(S['maquinaria']) & set(S['mano_obra']))
     rows=[{'periodo':p,**{k:S[k].get(p) for k in ['general','materiales','maquinaria','mano_obra']}} for p in periods if p>=START_MONTH]
     for k in ['general','materiales','maquinaria','mano_obra']:yoy(rows,k,12)
+    if len(rows)<24: raise RuntimeError('INEGI precios: menos de 24 observaciones; se conserva histórico')
     write_csv(ROOT/'icc_incevis_base2025_mensual.csv',rows,['periodo','general','materiales','maquinaria','mano_obra','general_yoy','materiales_yoy','maquinaria_yoy','mano_obra_yoy'])
     keys=['construccion','edificacion','edificacion_residencial','edificacion_no_residencial','obra_civil']
     periods=sorted(set.intersection(*(set(S[k]) for k in keys)))
     rows=[{'periodo':p,**{k:S[k].get(p) for k in keys}} for p in periods if p>=START_MONTH]
     for k in keys:yoy(rows,k,12)
+    if len(rows)<24: raise RuntimeError('INEGI INPP: menos de 24 observaciones; se conserva histórico')
     write_csv(ROOT/'inpp_construccion_edificacion_base2025_mensual.csv',rows,['periodo']+keys+[k+'_yoy' for k in keys])
     return rows[-1]['periodo'] if rows else None
 
@@ -251,5 +255,7 @@ def main():
     report['updated_by']='GitHub Actions / INEGI API'
     STATUS.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(report,ensure_ascii=False,indent=2))
+    if any(isinstance(v,dict) and v.get('status')=='conservado_sin_cambio' for v in report.values()):
+        raise SystemExit('Algunas series INEGI no se actualizaron; consulte auto_update_status.json')
 
 if __name__=='__main__': main()
