@@ -75,8 +75,11 @@ def pct_yoy(s):
 
 def main():
  if not TOKEN:raise SystemExit('Falta INEGI_API_TOKEN')
- catalog=getj(CAT.format(token=TOKEN)).get('CODE') or []
- try:resolved=json.loads(RES.read_text(encoding='utf-8'))
+try:
+    catalog=getj(CAT.format(token=TOKEN)).get('CODE') or []
+except Exception as e:
+    print(f"INEGI: catálogo no disponible ({type(e).__name__}); se usarán IDs conocidos")
+    catalog=[] try:resolved=json.loads(RES.read_text(encoding='utf-8'))
  except:resolved={}
  status={}
  # ENEC valor de producción: índices/niveles ya validados contra CSV local
