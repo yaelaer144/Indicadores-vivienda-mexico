@@ -1,0 +1,37 @@
+name: Vigilancia semanal PVB
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '25 14 * * 5'
+permissions:
+  contents: write
+concurrency:
+  group: vivienda-actualizacion
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Ejecutar consultas y registrar fallos
+        env:
+          INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
+        run: |
+          python scripts/run_group.py weekly update_pvb.py
+      - name: Regenerar datos y auditar histórico
+        if: always()
+        run: |
+          python scripts/rebuild_local_data.py
+          python scripts/audit_coverage.py
+      - name: Registrar actualizaciones
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- '*.csv' '*.json' 'local-data.js'
+          git diff --cached --quiet || (git commit -m "Actualización por frecuencia: ${{ github.workflow }}" && git push)
