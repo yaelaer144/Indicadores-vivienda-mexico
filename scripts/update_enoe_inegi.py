@@ -2,8 +2,8 @@
 """Actualiza ENOE trimestral desde Banco de Indicadores INEGI, validando contra la serie histórica local."""
 import csv,json,os,re,statistics,unicodedata,urllib.request
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1];TOKEN=os.environ.get('INEGI_API_TOKEN','').strip();UA='dashboard-vivienda-infonavit/3.0'
-API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/BIE/2.0/{token}?type=json';CAT='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/CL_INDICATOR/null/es/BIE/2.0/{token}?type=json';RES=ROOT/'inegi_resolved_ids.json';OUT=ROOT/'enoe_construccion_trimestral.csv'
+ROOT=Path(__file__).resolve().parents[1];TOKEN=os.environ.get('INEGI_API_TOKEN','').strip().strip('\"').strip("'");UA='dashboard-vivienda-infonavit/3.0'
+API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/BIE-BISE/2.0/{token}?type=json';CAT='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/CL_INDICATOR/null/es/BIE-BISE/2.0/{token}?type=json';RES=ROOT/'inegi_resolved_ids.json';OUT=ROOT/'enoe_construccion_trimestral.csv'
 def norm(s):return re.sub(r'[^a-z0-9]+',' ',unicodedata.normalize('NFKD',str(s or '')).encode('ascii','ignore').decode().lower()).strip()
 def getj(u):return json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'User-Agent':UA}),timeout=120))
 def qperiod(p):
