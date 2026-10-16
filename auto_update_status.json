@@ -1,4 +1,25 @@
 {
-  "checked_at_utc": null,
-  "updated_sources": []
+  "precios": {
+    "status": "error",
+    "error": "HTTP Error 400: Bad Request"
+  },
+  "igae": {
+    "status": "conservado_sin_cambio",
+    "error": "igae_construccion: falta ID validado; el catálogo de INEGI no responde y no se puede resolver automáticamente"
+  },
+  "imai": {
+    "status": "conservado_sin_cambio",
+    "error": "imai_construccion: falta ID validado; el catálogo de INEGI no responde y no se puede resolver automáticamente"
+  },
+  "ifb": {
+    "status": "conservado_sin_cambio",
+    "error": "ifb_residencial: falta ID validado; el catálogo de INEGI no responde y no se puede resolver automáticamente"
+  },
+  "enec_labor": {
+    "status": "conservado_sin_cambio",
+    "error": "enec_personal_construccion: falta ID validado; el catálogo de INEGI no responde y no se puede resolver automáticamente"
+  },
+  "updated_at_utc": "2026-10-16T15:07:46.926418+00:00",
+  "inicio_historico": "2016",
+  "updated_by": "GitHub Actions / INEGI API"
 }
