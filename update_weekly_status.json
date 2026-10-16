@@ -1,0 +1,15 @@
+{
+  "group": "weekly",
+  "run_at_utc": "2026-10-16T18:11:54.815753+00:00",
+  "results": [
+    {
+      "script": "update_pvb.py",
+      "group": null,
+      "exit_code": 1,
+      "status": "error"
+    }
+  ],
+  "failed": [
+    "update_pvb.py"
+  ]
+}
