@@ -1,5 +1,5 @@
 
-name: Diagnostico API INEGI
+name: Diagnostico IDs INEGI
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ jobs:
   diagnostico:
     runs-on: ubuntu-latest
     steps:
-      - name: Probar API INEGI
+      - name: Verificar identificadores
         env:
           INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
         run: |
@@ -16,32 +16,58 @@ jobs:
           import os
           import urllib.request
           import urllib.error
-          from urllib.parse import quote
+          import json
 
-          token = os.environ.get("INEGI_API_TOKEN", "").strip()
-
+          token = os.getenv("INEGI_API_TOKEN", "").strip()
           if not token:
-              raise SystemExit("ERROR: Falta el secreto INEGI_API_TOKEN")
+              raise SystemExit("Falta INEGI_API_TOKEN")
 
-          base = "https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml"
-          token = quote(token, safe="")
-
-          pruebas = {
-              "Catalogo BISE": f"{base}/CL_INDICATOR/1002000001/es/BISE/2.0/{token}?type=json",
-              "Catalogo BIE-BISE": f"{base}/CL_INDICATOR/1002000001/es/BIE-BISE/2.0/{token}?type=json",
-              "Serie BISE": f"{base}/INDICATOR/1002000001/es/00/false/BISE/2.0/{token}?type=json",
-              "Serie BIE-BISE": f"{base}/INDICATOR/1002000001/es/00/false/BIE-BISE/2.0/{token}?type=json"
+          ids = {
+              "General": "1660002",
+              "Materiales": "1660003",
+              "Maquinaria": "1660004",
+              "Mano de obra": "1660005",
+              "Construccion": "1700226",
+              "Edificacion": "1700227"
           }
 
-          for nombre, url in pruebas.items():
-              try:
-                  req = urllib.request.Request(
-                      url, headers={"Accept": "application/json",
-                                    "User-Agent": "Mozilla/5.0"})
-                  with urllib.request.urlopen(req, timeout=40) as r:
-                      print(f"{nombre}: HTTP {r.status}")
-              except urllib.error.HTTPError as e:
-                  print(f"{nombre}: HTTP {e.code}")
-              except Exception as e:
-                  print(f"{nombre}: {type(e).__name__}")
+          base = (
+              "https://www.inegi.org.mx/app/api/"
+              "indicadores/desarrolladores/jsonxml"
+          )
+
+          for nombre, indicador in ids.items():
+              for fuente in ("BISE", "BIE-BISE"):
+                  url = (
+                      f"{base}/INDICATOR/{indicador}"
+                      f"/es/00/false/{fuente}/2.0/{token}"
+                      "?type=json"
+                  )
+                  try:
+                      req = urllib.request.Request(
+                          url,
+                          headers={"User-Agent": "Mozilla/5.0"}
+                      )
+                      with urllib.request.urlopen(req, timeout=40) as r:
+                          data = json.load(r)
+                      series = data.get("Series") or []
+                      observaciones = sum(
+                          len(s.get("OBSERVATIONS") or [])
+                          for s in series
+                      )
+                      print(
+                          nombre, indicador, fuente,
+                          "HTTP 200",
+                          "observaciones:", observaciones
+                      )
+                  except urllib.error.HTTPError as e:
+                      print(
+                          nombre, indicador, fuente,
+                          "HTTP", e.code
+                      )
+                  except Exception as e:
+                      print(
+                          nombre, indicador, fuente,
+                          type(e).__name__
+                      )
           PY
