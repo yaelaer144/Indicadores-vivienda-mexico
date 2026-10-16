@@ -234,13 +234,14 @@ def update_csvm(catalog,resolved):
 
 def main():
     if not TOKEN: raise SystemExit('Falta el secret INEGI_API_TOKEN')
-resolved=load_resolved()
-try:
-    catalog=load_catalog()
-except Exception as e:
-    print(f"INEGI: catálogo no disponible ({type(e).__name__}); se usarán IDs conocidos")
-    catalog=[]
-report={}    group=os.environ.get('INEGI_UPDATE_GROUP','all').strip().lower()
+    resolved=load_resolved()
+    try:
+        catalog=load_catalog()
+    except Exception as exc:
+        print(f"Catalogo INEGI no disponible: {type(exc).__name__}; usando identificadores conocidos",flush=True)
+        catalog=[]
+    report={}
+    group=os.environ.get('INEGI_UPDATE_GROUP','all').strip().lower()
     if group in ('all','monthly'):
         try:
             report['precios']={'status':'actualizado','ultimo':update_prices(),'ids':PRICE_IDS}
@@ -270,4 +271,3 @@ report={}    group=os.environ.get('INEGI_UPDATE_GROUP','all').strip().lower()
         raise SystemExit('Algunas series INEGI no se actualizaron; consulte auto_update_status.json')
 
 if __name__=='__main__': main()
-
