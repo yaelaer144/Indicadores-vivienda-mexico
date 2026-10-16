@@ -49,7 +49,11 @@ def resolve(key,includes,excludes,col,catalog,resolved):
  resolved[key]=best[1];return {p:v/best[3] for p,v in best[2].items()},best[0]
 def main():
  if not TOKEN:raise SystemExit('Falta INEGI_API_TOKEN')
- catalog=getj(CAT.format(token=TOKEN)).get('CODE') or []
+ try:
+  catalog=getj(CAT.format(token=TOKEN)).get('CODE') or []
+ except Exception as exc:
+  print(f"Catalogo INEGI no disponible: {type(exc).__name__}; usando identificadores conocidos",flush=True)
+  catalog=[]
  try:resolved=json.loads(RES.read_text(encoding='utf-8'))
  except:resolved={}
  cons,e1=resolve('enoe_construccion',['poblacion ocupada','construccion'],['porcentaje','tasa','entidad federativa'],'total',catalog,resolved)
@@ -60,4 +64,3 @@ def main():
  with tmp.open('w',encoding='utf-8-sig',newline='') as f:w=csv.DictWriter(f,fieldnames=['periodo','total','ocupada_total','formal','informal']);w.writeheader();w.writerows(out)
  tmp.replace(OUT);RES.write_text(json.dumps(resolved,ensure_ascii=False,indent=2),encoding='utf-8');(ROOT/'enoe_update_status.json').write_text(json.dumps({'ultimo':out[-1]['periodo'],'error_construccion':e1,'error_total':e2},indent=2),encoding='utf-8')
 if __name__=='__main__':main()
-
