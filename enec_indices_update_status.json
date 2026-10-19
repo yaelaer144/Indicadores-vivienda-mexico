@@ -1,6 +1,6 @@
 {
   "fuente": "INEGI ENEC 2018, índices originales",
-  "fecha_utc": "2026-10-19T15:47:01.529181+00:00",
+  "fecha_utc": "2026-10-19T16:24:42.324033+00:00",
   "series": {
     "personal_construccion": {
       "id": "720286",
@@ -60,27 +60,27 @@
   "estado": "actualizado",
   "comparacion_historica": {
     "personal_construccion": {
-      "comparaciones": 100,
+      "comparaciones": 127,
       "error_relativo_mediano": 0.0
     },
     "personal_edificacion": {
-      "comparaciones": 100,
+      "comparaciones": 127,
       "error_relativo_mediano": 0.0
     },
     "horas_construccion": {
-      "comparaciones": 100,
+      "comparaciones": 127,
       "error_relativo_mediano": 0.0
     },
     "horas_edificacion": {
-      "comparaciones": 100,
+      "comparaciones": 127,
       "error_relativo_mediano": 0.0
     },
     "remuneraciones_construccion": {
-      "comparaciones": 100,
+      "comparaciones": 127,
       "error_relativo_mediano": 0.0
     },
     "remuneraciones_edificacion": {
-      "comparaciones": 100,
+      "comparaciones": 127,
       "error_relativo_mediano": 0.0
     }
   },
