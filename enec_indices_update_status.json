@@ -1,0 +1,90 @@
+{
+  "fuente": "INEGI ENEC 2018, índices originales",
+  "fecha_utc": "2026-10-19T15:47:01.529181+00:00",
+  "series": {
+    "personal_construccion": {
+      "id": "720286",
+      "descripcion": "720286",
+      "unidad": "1051",
+      "frecuencia": "8",
+      "primero": "2016-01",
+      "ultimo": "2026-07",
+      "observaciones": 127
+    },
+    "personal_edificacion": {
+      "id": "722171",
+      "descripcion": "722171",
+      "unidad": "1051",
+      "frecuencia": "8",
+      "primero": "2016-01",
+      "ultimo": "2026-07",
+      "observaciones": 127
+    },
+    "horas_construccion": {
+      "id": "720298",
+      "descripcion": "720298",
+      "unidad": "1051",
+      "frecuencia": "8",
+      "primero": "2016-01",
+      "ultimo": "2026-07",
+      "observaciones": 127
+    },
+    "horas_edificacion": {
+      "id": "722195",
+      "descripcion": "722195",
+      "unidad": "1051",
+      "frecuencia": "8",
+      "primero": "2016-01",
+      "ultimo": "2026-07",
+      "observaciones": 127
+    },
+    "remuneraciones_construccion": {
+      "id": "720318",
+      "descripcion": "720318",
+      "unidad": "1051",
+      "frecuencia": "8",
+      "primero": "2016-01",
+      "ultimo": "2026-07",
+      "observaciones": 127
+    },
+    "remuneraciones_edificacion": {
+      "id": "722235",
+      "descripcion": "722235",
+      "unidad": "1051",
+      "frecuencia": "8",
+      "primero": "2016-01",
+      "ultimo": "2026-07",
+      "observaciones": 127
+    }
+  },
+  "estado": "actualizado",
+  "comparacion_historica": {
+    "personal_construccion": {
+      "comparaciones": 100,
+      "error_relativo_mediano": 0.0
+    },
+    "personal_edificacion": {
+      "comparaciones": 100,
+      "error_relativo_mediano": 0.0
+    },
+    "horas_construccion": {
+      "comparaciones": 100,
+      "error_relativo_mediano": 0.0
+    },
+    "horas_edificacion": {
+      "comparaciones": 100,
+      "error_relativo_mediano": 0.0
+    },
+    "remuneraciones_construccion": {
+      "comparaciones": 100,
+      "error_relativo_mediano": 0.0
+    },
+    "remuneraciones_edificacion": {
+      "comparaciones": 100,
+      "error_relativo_mediano": 0.0
+    }
+  },
+  "ultimo_periodo": "2026-07",
+  "primer_periodo": "2016-01",
+  "filas": 127
+}
