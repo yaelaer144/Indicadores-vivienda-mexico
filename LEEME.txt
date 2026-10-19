@@ -1,0 +1,7 @@
+IGAE / IMAI — DATOS EXTRAIDOS DE TABULADOS OFICIALES
+- Los archivos igae_construccion_mensual.csv e imai_construccion_mensual.csv estan preparados para la raiz del repositorio.
+- imai_construccion_subsectores_mensual.csv añade edificación (236), obras civiles (237) y especializados (238).
+- Cada fuente conserva su ultimo mes publicado; se registran revisiones en diagnostico_igae_imai.json.
+- prepare_igae_imai.py transforma archivos oficiales descargados, pero NO automatiza su descarga.
+- NO se ha verificado URL estable o ID API para actualización autónoma desde GitHub.
+- Para desplegar cambios, revisar archivos y ejecutar python scripts/rebuild_local_data.py; confirmar que el dashboard lee estas columnas.

@@ -1,0 +1,39 @@
+{
+  "fuente": "INEGI tabulados oficiales CSV proporcionados por usuario",
+  "tipo": "series originales; índices de volumen físico base 2018=100",
+  "igae_construccion": {
+    "primer_periodo": "2016-01",
+    "ultimo_periodo": "2026-07",
+    "observaciones": 127
+  },
+  "imai_construccion": {
+    "primer_periodo": "2016-01",
+    "ultimo_periodo": "2026-08",
+    "observaciones": 128
+  },
+  "comparacion": {
+    "periodos_comunes": 127,
+    "maxima_diferencia_absoluta": 0.19161738770789327,
+    "coincidencia_exacta": false,
+    "periodos_con_diferencias": 1
+  },
+  "subsectores": {
+    "construction": {
+      "observaciones": 128,
+      "ultimo": "2026-08"
+    },
+    "edificacion": {
+      "observaciones": 128,
+      "ultimo": "2026-08"
+    },
+    "obra_civil": {
+      "observaciones": 128,
+      "ultimo": "2026-08"
+    },
+    "trabajos_especializados": {
+      "observaciones": 128,
+      "ultimo": "2026-08"
+    }
+  },
+  "automatizacion_descarga": "pendiente: falta URL programable validada o IDs de API"
+}
