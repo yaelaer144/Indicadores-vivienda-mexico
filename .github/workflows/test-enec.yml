@@ -1,0 +1,28 @@
+name: Prueba independiente ENEC
+on:
+  workflow_dispatch:
+jobs:
+  enec:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validar sintaxis
+        run: python -m py_compile scripts/update_enec_indices.py scripts/update_inegi_series.py
+      - name: Consultar indices ENEC y validar CSV
+        env:
+          INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
+        run: python scripts/update_enec_indices.py
+      - name: Conservar CSV y diagnóstico para revisión
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prueba-enec
+          path: |
+            enec_indices_laborales_mensual.csv
+            enec_indices_update_status.json
+          if-no-files-found: warn
