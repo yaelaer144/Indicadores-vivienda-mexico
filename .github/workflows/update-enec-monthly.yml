@@ -1,0 +1,88 @@
+name: Actualizacion mensual ENEC (seis indices)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Cada mes el dia 20, 15:40 UTC (09:40 o 10:40 de CDMX segun estacion).
+    # Si INEGI publica despues, el siguiente mes recupera los datos pendientes.
+    - cron: '40 15 20 * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vivienda-actualizacion
+  cancel-in-progress: false
+
+jobs:
+  actualizar-enec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Obtener repositorio
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validar codigo
+        run: python -m py_compile scripts/update_enec_indices.py scripts/rebuild_local_data.py
+
+      - name: Consultar seis indices ENEC en INEGI
+        env:
+          INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
+        run: python scripts/update_enec_indices.py
+
+      - name: Validar archivo y cobertura
+        run: |
+          python - <<'PYCODE'
+          import csv, json
+          from pathlib import Path
+          expected = [
+              'personal_construccion','personal_edificacion',
+              'horas_construccion','horas_edificacion',
+              'remuneraciones_construccion','remuneraciones_edificacion'
+          ]
+          status = json.loads(Path('enec_indices_update_status.json').read_text(encoding='utf-8'))
+          assert status.get('estado') == 'actualizado', status
+          with Path('enec_indices_laborales_mensual.csv').open(encoding='utf-8-sig', newline='') as f:
+              rows = list(csv.DictReader(f))
+          periods = [r['periodo'] for r in rows]
+          assert len(rows) >= 100 and periods == sorted(set(periods)), 'Cobertura insuficiente o fechas duplicadas'
+          assert periods[0] <= '2016-01', 'Falta historico desde enero 2016'
+          for row in rows:
+              for col in expected:
+                  assert float(row[col]) > 0, (row['periodo'], col)
+          print(f'ENEC validado: {len(rows)} meses, {periods[0]} a {periods[-1]}')
+          PYCODE
+
+      - name: Reconstruir archivo que lee el dashboard
+        run: python scripts/rebuild_local_data.py
+
+      - name: Guardar cambios en GitHub
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add enec_indices_laborales_mensual.csv enec_indices_update_status.json local-data.js
+          if git diff --cached --quiet; then
+            echo 'No hay cambios de datos que publicar.'
+          else
+            git commit -m 'Actualizar indices ENEC automaticamente'
+            git push origin HEAD:main
+          fi
+
+      - name: Guardar resultado y diagnostico
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: enec-mensual-datos-y-diagnostico
+          path: |
+            enec_indices_laborales_mensual.csv
+            enec_indices_update_status.json
+          if-no-files-found: warn
