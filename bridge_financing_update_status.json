@@ -1,0 +1,6 @@
+{
+  "updated_at": "2026-10-20T18:06:02",
+  "status": "error",
+  "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)>",
+  "source_url": "https://portafolioinfo.cnbv.gob.mx/_layouts/15/download.aspx?SourceUrl=https://portafolioinfo.cnbv.gob.mx/PortafolioInformacion/SH_BM.xlsm"
+}
