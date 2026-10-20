@@ -1,4 +1,4 @@
-name: Actualizar IGAE e IMAI
+name: Actualizar IGAE e IMAI (tabulados)
 on:
   workflow_dispatch:
   schedule:
@@ -11,6 +11,7 @@ concurrency:
 jobs:
   actualizar:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,19 +19,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Consultar INEGI y validar series
-        env:
-          INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
-          INEGI_IGAE_ID: ${{ vars.INEGI_IGAE_ID }}
-          INEGI_IMAI_ID: ${{ vars.INEGI_IMAI_ID }}
-          INEGI_IGAE_SOURCE: ${{ vars.INEGI_IGAE_SOURCE }}
-          INEGI_IMAI_SOURCE: ${{ vars.INEGI_IMAI_SOURCE }}
+      - name: Preparar navegador automatizado
+        run: |
+          python -m pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Descargar, transformar y validar tabulados INEGI
         run: python scripts/update_igae_imai.py
-      - name: Guardar historicos
+      - name: Guardar históricos verificados
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add igae_construccion_mensual.csv imai_construccion_mensual.csv igae_imai_update_status.json
+          git add igae_construccion_mensual.csv imai_construccion_mensual.csv imai_construccion_subsectores_mensual.csv igae_imai_update_status.json
           if ! git diff --cached --quiet; then
             git commit -m 'Actualización mensual IGAE e IMAI'
             git push
