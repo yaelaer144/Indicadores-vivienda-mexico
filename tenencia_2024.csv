@@ -1,5 +1,5 @@
 ﻿anio,categoria,porcentaje,viviendas,definicion
-2024,Propia totalmente pagada,59.4183492655,22790527,"Categoría 'Propia' publicada, sin sumar las que se están pagando"
-2024,Propia pagándose,10.442289639799995,4005249,Viviendas propias que todavía se están pagando; diferencia entre propia + pagándose y propia estricta
-2024,Rentada,15.7155970368,6027881,Viviendas rentadas
-2024,Otros,14.4237640579,,Prestada + intestada/litigio + otra situación
+2024,Propia totalmente pagada,59.41834926554726,22790527,Estimación ponderada directa con microdatos VIVIENDAS ENIGH
+2024,Propia pagándose,10.442289639791301,4005249,Estimación ponderada directa con microdatos VIVIENDAS ENIGH
+2024,Rentada,15.715597036837117,6027881,Estimación ponderada directa con microdatos VIVIENDAS ENIGH
+2024,Otros,14.423764057824318,5532385,Estimación ponderada directa con microdatos VIVIENDAS ENIGH

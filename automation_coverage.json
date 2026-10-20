@@ -1,24 +1,24 @@
 {
-  "generated_at": "2026-10-16T18:11:54",
+  "generated_at": "2026-10-20T18:02:14",
   "objetivo": "Preferencia 2016; alternativa 2018 cuando la serie validada no tenga histórico anterior o cambie metodología",
   "series": [
     {
       "archivo": "igae_construccion_mensual.csv",
       "frecuencia": "mensual",
       "objetivo_inicio": "2016-01",
-      "primer_periodo": "2025-01",
-      "ultimo_periodo": "2026-06",
-      "observaciones": 18,
-      "cobertura_objetivo": "pendiente_backfill"
+      "primer_periodo": "2016-01",
+      "ultimo_periodo": "2026-07",
+      "observaciones": 127,
+      "cobertura_objetivo": "completo"
     },
     {
       "archivo": "imai_construccion_mensual.csv",
       "frecuencia": "mensual",
       "objetivo_inicio": "2016-01",
-      "primer_periodo": "2021-01",
-      "ultimo_periodo": "2026-06",
-      "observaciones": 66,
-      "cobertura_objetivo": "pendiente_backfill"
+      "primer_periodo": "2016-01",
+      "ultimo_periodo": "2026-08",
+      "observaciones": 128,
+      "cobertura_objetivo": "completo"
     },
     {
       "archivo": "ifb_residencial_mensual.csv",
@@ -51,10 +51,10 @@
       "archivo": "enec_indices_laborales_mensual.csv",
       "frecuencia": "mensual",
       "objetivo_inicio": "2016-01",
-      "primer_periodo": "2018-01",
-      "ultimo_periodo": "2026-04",
-      "observaciones": 100,
-      "cobertura_objetivo": "pendiente_backfill"
+      "primer_periodo": "2016-01",
+      "ultimo_periodo": "2026-07",
+      "observaciones": 127,
+      "cobertura_objetivo": "completo"
     },
     {
       "archivo": "enec_actividad_historica.csv",
@@ -175,12 +175,9 @@
     }
   ],
   "pendientes": [
-    "igae_construccion_mensual.csv",
-    "imai_construccion_mensual.csv",
     "ifb_residencial_mensual.csv",
     "icc_incevis_base2025_mensual.csv",
     "inpp_construccion_edificacion_base2025_mensual.csv",
-    "enec_indices_laborales_mensual.csv",
     "enec_actividad_historica.csv",
     "enec_personal_tipo_variacion_mensual.csv",
     "enec_vivienda_yoy.csv",

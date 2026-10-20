@@ -1,0 +1,5 @@
+{
+  "enigh_error": "dict contains fields not in fieldnames: 'unidad', 'fuente_definicion'",
+  "conavi_deficit_year": 2024,
+  "pobreza_carencias_error": "No se validó presentación INEGI de pobreza multidimensional"
+}

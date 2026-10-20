@@ -1,0 +1,13 @@
+{
+  "group": "semiannual",
+  "run_at_utc": "2026-10-20T18:02:14.328392+00:00",
+  "results": [
+    {
+      "script": "update_enigh_conditions.py",
+      "group": null,
+      "exit_code": 0,
+      "status": "ok"
+    }
+  ],
+  "failed": []
+}
