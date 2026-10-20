@@ -1,74 +1,136 @@
 #!/usr/bin/env python3
-"""Actualización conservadora de índices mensuales INEGI vía API oficial.
-Requiere INEGI_API_TOKEN, INEGI_IGAE_ID, INEGI_IMAI_ID; fuente por variable opcional.
-No deduce automáticamente la identidad de una serie a partir de su valor.
+"""Descarga tabulados IGAE/IMAI con navegador, valida y transforma de forma segura.
+
+El flujo de Playwright requiere validación en GitHub Actions contra el portal real.
+Prueba sin red: --local-igae archivo.csv --local-imai archivo.csv
 """
-import csv, json, math, os, re, sys, urllib.request
+import argparse
+import csv
+import json
+import os
 from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
 from datetime import datetime, timezone
 
-ROOT=Path(__file__).resolve().parents[1]
-TOKEN=os.getenv('INEGI_API_TOKEN','').strip()
-CFG=[('IGAE','igae_construccion_mensual.csv'),('IMAI','imai_construccion_mensual.csv')]
-URL='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/{source}/2.0/{token}?type=json'
+ROOT = Path(__file__).resolve().parents[1]
+TABULADOS = {
+    'IGAE': 'https://www.inegi.org.mx/app/tabulados/default.aspx?pr=11&vr=1&in=2&tp=20&wr=1&cno=1&idrt=3252&opc=p',
+    'IMAI': 'https://www.inegi.org.mx/app/tabulados/default.aspx?pr=10&vr=1&in=2&tp=20&wr=1&cno=1&idrt=3251&opc=p',
+}
+OUTPUTS = ('igae_construccion_mensual.csv', 'imai_construccion_mensual.csv',
+           'imai_construccion_subsectores_mensual.csv')
 
-def pull(which):
-    ind=os.getenv(f'INEGI_{which}_ID','').strip()
-    source=(os.getenv(f'INEGI_{which}_SOURCE') or 'BIE-BISE').strip()
-    if not re.fullmatch(r'\d{3,15}',ind): raise ValueError(f'Falta INEGI_{which}_ID (ID validado)')
-    if source not in ('BISE','BIE-BISE'):raise ValueError('Fuente no permitida')
-    url=URL.format(id=ind,source=source,token=TOKEN)
-    req=urllib.request.Request(url,headers={'Accept':'application/json','User-Agent':'Indicadores-vivienda-mexico/1.0'})
-    with urllib.request.urlopen(req,timeout=90) as resp: data=json.load(resp)
-    series=data.get('Series') or []
-    if not series:raise RuntimeError(f'{which}: respuesta sin Series; revisar ID y fuente')
-    if len(series)!=1:raise RuntimeError(f'{which}: numero inesperado de series')
-    info=series[0]
-    rows={}
-    for o in info.get('OBSERVATIONS',[]):
-        period=str(o.get('TIME_PERIOD','')).strip()
-        if not re.fullmatch(r'\d{4}-\d{2}',period) or not ('01'<=period[-2:]<='12') or period<'2016-01':continue
-        try: val=float(str(o.get('OBS_VALUE','')).replace(',',''))
-        except ValueError:continue
-        if math.isfinite(val) and val>0:rows[period]=val
-    if len(rows)<100 or '2016-01' not in rows:raise RuntimeError(f'{which}: historial insuficiente: {len(rows)}')
-    return ind,source,rows,info
+def descargar(page, which, dest):
+    url = TABULADOS[which]
+    page.goto(url, wait_until='domcontentloaded', timeout=90000)
+    page.wait_for_timeout(3000)
+    # La sección "Series Originales" se solicita explícitamente; no seleccionar
+    # automáticamente una tabla desestacionalizada si aparece como predeterminada.
+    for frame in page.frames:
+        candidates = frame.locator('a, button, input[type=button], [role=button]').filter(
+            has_text=__import__('re').compile(r'CSV', __import__('re').I))
+        alternatives = frame.locator('[title*="CSV"], [aria-label*="CSV"], [value="CSV"]')
+        for locator in (candidates, alternatives):
+            for i in range(min(locator.count(), 12)):
+                el = locator.nth(i)
+                if not el.is_visible():
+                    continue
+                try:
+                    with page.expect_download(timeout=45000) as download_info:
+                        el.click(timeout=10000)
+                    download = download_info.value
+                    download.save_as(dest)
+                    if dest.stat().st_size < 500:
+                        raise RuntimeError('La descarga CSV está vacía')
+                    print(f'{which}: descargado {download.suggested_filename} ({dest.stat().st_size} bytes)')
+                    return
+                except Exception as exc:
+                    print(f'{which}: control CSV no produjo descarga: {str(exc)[:160]}', flush=True)
+    raise RuntimeError(f'{which}: no se detectó descarga CSV. Revisar selector/interacción del tabulado; se preservan los históricos.')
 
-def historical(path):
-    if not path.exists():return {}
-    with path.open(encoding='utf-8-sig',newline='') as f:
-        return {r['periodo']:float(r['indice']) for r in csv.DictReader(f) if r.get('periodo') and r.get('indice')}
+def get_last(path):
+    if not path.exists():
+        return None
+    with path.open(encoding='utf-8-sig', newline='') as f:
+        rows=list(csv.DictReader(f))
+    return max((r['periodo'] for r in rows if r.get('periodo')), default=None)
 
-def write(path, data):
-    periods=sorted(data)
-    lines=[]
-    for i,p in enumerate(periods):
-        x=data[p]; previous=data.get(periods[i-1]) if i else None
-        prev_year=data.get(f'{int(p[:4])-1}-{p[-2:]}')
-        lines.append({'periodo':p,'indice':round(x,9),'variacion_mensual':round((x/previous-1)*100,9) if previous else '', 'variacion_anual':round((x/prev_year-1)*100,9) if prev_year else ''})
-    with path.open('w',encoding='utf-8',newline='') as f:
-        w=csv.DictWriter(f,fieldnames=['periodo','indice','variacion_mensual','variacion_anual']);w.writeheader();w.writerows(lines)
+def validate(stage):
+    for name in OUTPUTS:
+        path=stage/name
+        if not path.exists() or path.stat().st_size == 0:
+            raise RuntimeError(f'No se generó {name}')
+        with path.open(encoding='utf-8-sig',newline='') as f:
+            rows=list(csv.DictReader(f))
+        periods=[r['periodo'] for r in rows]
+        if len(periods)<90 or len(periods)!=len(set(periods)) or periods!=sorted(periods):
+            raise RuntimeError(f'Histórico incompleto o duplicado: {name}')
+        if periods[0] != '2016-01':
+            raise RuntimeError(f'El histórico no inicia en enero de 2016: {name}')
+        existing=ROOT/name
+        if existing.exists():
+            with existing.open(encoding='utf-8-sig', newline='') as f:
+                previous_rows={r['periodo']:r for r in csv.DictReader(f)}
+            with path.open(encoding='utf-8-sig', newline='') as f:
+                current_rows={r['periodo']:r for r in csv.DictReader(f)}
+            common=sorted(set(previous_rows)&set(current_rows))[-24:]
+            values=[]
+            field='indice' if name != 'imai_construccion_subsectores_mensual.csv' else 'construction'
+            for period in common:
+                try:
+                    old=float(previous_rows[period][field]); new=float(current_rows[period][field])
+                    if old > 0: values.append(abs(new-old)/old)
+                except (KeyError,ValueError,TypeError):
+                    continue
+            if len(values)>=6 and sorted(values)[len(values)//2] > .02:
+                raise RuntimeError(f'{name}: cambios excesivos respecto al histórico; posible serie incorrecta')
+        previous=get_last(ROOT/name)
+        if previous and periods[-1]<previous:
+            raise RuntimeError(f'{name} retrocede de {previous} a {periods[-1]}')
+        print(f'{name}: {len(periods)} meses, {periods[0]} a {periods[-1]}')
 
 def main():
-    if not TOKEN:raise RuntimeError('Falta INEGI_API_TOKEN en GitHub Secrets')
-    checked=[]
-    for which,filename in CFG:
-        indicator,source,new,info=pull(which)
-        path=ROOT/filename; old=historical(path)
-        # Los datos oficiales pueden revisarse; tolerar revisiones, nunca retroceder mes.
-        if old and max(new)<max(old):raise RuntimeError(f'{which}: el ultimo mes retrocede de {max(old)} a {max(new)}')
-        # Proteger contra seleccionar por accidente un indicador de otra escala.
-        common=sorted(set(new)&set(old))[-24:]
-        if old and len(common)>=6:
-            errors=sorted(abs(new[p]-old[p])/old[p] for p in common if old[p]>0)
-            if len(errors)>=6 and errors[len(errors)//2]>0.02:
-                raise RuntimeError(f'{which}: el ID no coincide con el CSV historico; desviacion mediana >2%')
-        checked.append((which,filename,indicator,source,new))
-    # Ambas series deben validarse antes de escribir cualquiera.
-    for which,filename,indicator,source,series in checked:
-        write(ROOT/filename,series)
-        print(f'{which}: {len(series)} meses; {min(series)} a {max(series)}; ID={indicator}; fuente={source}')
-    (ROOT/'igae_imai_update_status.json').write_text(json.dumps({'fecha_utc':datetime.now(timezone.utc).isoformat(),'resultado':'ok','series':[{'nombre':x[0],'id':x[2],'fuente':x[3],'observaciones':len(x[4]),'ultimo_mes':max(x[4])} for x in checked]},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    ap=argparse.ArgumentParser()
+    ap.add_argument('--local-igae',type=Path)
+    ap.add_argument('--local-imai',type=Path)
+    args=ap.parse_args()
+    if bool(args.local_igae) != bool(args.local_imai):
+        ap.error('Se necesitan ambos CSV en modo local')
+    with tempfile.TemporaryDirectory(prefix='inegi_igae_imai_') as td:
+        temp=Path(td)
+        if args.local_igae:
+            shutil.copy2(args.local_igae,temp/'IGAE.csv')
+            shutil.copy2(args.local_imai,temp/'IMAI.csv')
+            metodo='prueba_local'
+        else:
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                browser=p.chromium.launch(headless=True, args=['--no-sandbox'])
+                context=browser.new_context(accept_downloads=True, locale='es-MX')
+                page=context.new_page()
+                for which in ('IGAE','IMAI'):
+                    descargar(page,which,temp/f'{which}.csv')
+                browser.close()
+            metodo='playwright_tabulados'
+        subprocess.run([sys.executable,str(ROOT/'prepare_igae_imai.py'),
+                        str(temp/'IGAE.csv'),str(temp/'IMAI.csv'),str(temp)],check=True)
+        validate(temp)
+        # El transformador produjo todas las salidas; solo entonces reemplazarlas.
+        for name in OUTPUTS:
+            os.replace(temp/name, ROOT/name)
+        status={'fecha_utc':datetime.now(timezone.utc).isoformat(),
+                'resultado':'ok','metodo':metodo,
+                'fuentes':TABULADOS,
+                'ultimo_igae':get_last(ROOT/OUTPUTS[0]),
+                'ultimo_imai':get_last(ROOT/OUTPUTS[1])}
+        (ROOT/'igae_imai_update_status.json').write_text(json.dumps(status,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+        print('Actualización verificada: archivos generados correctamente')
+
 if __name__=='__main__':
-    try:main()
-    except Exception as e:print('ERROR:',str(e),file=sys.stderr);sys.exit(1)
+    try: main()
+    except Exception as exc:
+        print(f'ERROR: {exc}',file=sys.stderr)
+        sys.exit(1)
