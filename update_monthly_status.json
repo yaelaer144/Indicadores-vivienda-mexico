@@ -1,6 +1,6 @@
 {
   "group": "monthly",
-  "run_at_utc": "2026-10-16T15:07:51.253927+00:00",
+  "run_at_utc": "2026-10-23T15:36:14.038879+00:00",
   "results": [
     {
       "script": "update_inegi_series.py",

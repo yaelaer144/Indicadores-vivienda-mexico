@@ -1,7 +1,7 @@
 {
   "precios": {
     "status": "error",
-    "error": "HTTP Error 400: Bad Request"
+    "error": "icc_incevis_base2025_mensual.csv/general: ID 1660002: sin respuesta válida en BIE-BISE/BISE; último error: HTTP Error 400: Bad Request | icc_incevis_base2025_mensual.csv/materiales: ID 1660003: sin respuesta válida en BIE-BISE/BISE; último error: HTTP Error 400: Bad Request | icc_incevis_base2025_mensual.csv/maquinaria: ID 1660004: sin respuesta válida en BIE-BISE/BISE; último error: HTTP Error 400: Bad Request | icc_incevis_base2025_mensual.csv/mano_obra: ID 1660005: sin respuesta válida en BIE-BISE/BISE; último error: HTTP Error 400: Bad Request | inpp_construccion_edificacion_base2025_mensual.csv/edificacion: ID 1700227: sin respuesta válida en BIE-BISE/BISE; último error: HTTP Error 400: Bad Request | inpp_construccion_edificacion_base2025_mensual.csv/edificacion_residencial: ID 1700228: sin respuesta válida en BIE-BISE/BISE; último error: HTTP Error 400: Bad Request | inpp_construccion_edificacion_base2025_mensual.csv/edificacion_no_residencial: ID 1700232: sin respuesta válida en BIE-BISE/BISE; último error: HTTP Error 400: Bad Request | inpp_construccion_edificacion_base2025_mensual.csv/obra_civil: ID 1700239: sin respuesta válida en BIE-BISE/BISE; último error: HTTP Error 400: Bad Request"
   },
   "igae": {
     "status": "conservado_sin_cambio",
@@ -16,10 +16,19 @@
     "error": "ifb_residencial: falta ID validado; el catálogo de INEGI no responde y no se puede resolver automáticamente"
   },
   "enec_labor": {
-    "status": "conservado_sin_cambio",
-    "error": "enec_personal_construccion: falta ID validado; el catálogo de INEGI no responde y no se puede resolver automáticamente"
+    "status": "actualizado",
+    "ultimo": "2026-08",
+    "ids": {
+      "personal_construccion": "720286",
+      "personal_edificacion": "722171",
+      "horas_construccion": "720298",
+      "horas_edificacion": "722195",
+      "remuneraciones_construccion": "720318",
+      "remuneraciones_edificacion": "722235"
+    },
+    "observaciones": 128
   },
-  "updated_at_utc": "2026-10-16T15:07:46.926418+00:00",
+  "updated_at_utc": "2026-10-23T15:36:08.734247+00:00",
   "inicio_historico": "2016",
   "updated_by": "GitHub Actions / INEGI API"
 }
