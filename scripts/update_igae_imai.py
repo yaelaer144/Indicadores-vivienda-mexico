@@ -71,21 +71,44 @@ def descargar(page, which, dest):
                 f"{which}: error HTTP {respuesta.status}"
             )
 
+        
         controles = []
 
-        for frame in page.frames:
-            locator = frame.get_by_text(
-                re.compile(r"Descarga\s+CSV", re.I)
-            )
+        selector = (
+            'a, button, input, [role="button"], '
+            '[title], [aria-label]'
+        )
 
-            for i in range(min(locator.count(), 10)):
-                elemento = locator.nth(i)
+        for frame in page.frames:
+            elementos = frame.locator(selector)
+
+            for i in range(min(elementos.count(), 300)):
+                elemento = elementos.nth(i)
 
                 try:
-                    if elemento.is_visible():
+                    if not elemento.is_visible():
+                        continue
+
+                    texto = " ".join([
+                        elemento.inner_text(timeout=1000) or "",
+                        elemento.get_attribute("title") or "",
+                        elemento.get_attribute("value") or "",
+                        elemento.get_attribute("aria-label") or ""
+                    ])
+
+                    if re.search(
+                        r"descarga\s*csv|csv",
+                        texto,
+                        re.IGNORECASE
+                    ):
                         controles.append(elemento)
+                        print(
+                            f"{which}: control encontrado: "
+                            f"{texto[:150]}"
+                        )
+
                 except Exception:
-                    pass
+                    continue
 
         print(
             f"{which}: controles CSV visibles = "
