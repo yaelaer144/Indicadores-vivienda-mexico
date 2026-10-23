@@ -32,6 +32,17 @@ jobs:
           python -m pip install playwright==1.56.0
           python -m playwright install --with-deps chromium
 
+      - name: Diagnosticar páginas IGAE e IMAI
+        run: python scripts/diagnosticar_igae_imai.py
+
+      - name: Guardar diagnóstico INEGI
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostico-igae-imai
+          path: diagnostico_inegi/
+          if-no-files-found: warn
+
       - name: Descargar, transformar y validar tabulados INEGI
         run: python scripts/update_igae_imai.py
 
