@@ -23,33 +23,163 @@ TABULADOS = {
 OUTPUTS = ('igae_construccion_mensual.csv', 'imai_construccion_mensual.csv',
            'imai_construccion_subsectores_mensual.csv')
 
+
 def descargar(page, which, dest):
+    import re
+    from playwright.sync_api import TimeoutError as PlaywrightTimeout
+
     url = TABULADOS[which]
-    page.goto(url, wait_until='domcontentloaded', timeout=90000)
-    page.wait_for_timeout(3000)
-    # La sección "Series Originales" se solicita explícitamente; no seleccionar
-    # automáticamente una tabla desestacionalizada si aparece como predeterminada.
-    for frame in page.frames:
-        candidates = frame.locator('a, button, input[type=button], [role=button]').filter(
-            has_text=__import__('re').compile(r'CSV', __import__('re').I))
-        alternatives = frame.locator('[title*="CSV"], [aria-label*="CSV"], [value="CSV"]')
-        for locator in (candidates, alternatives):
-            for i in range(min(locator.count(), 12)):
-                el = locator.nth(i)
-                if not el.is_visible():
-                    continue
+    respuestas = []
+    descargas = []
+
+    def registrar_respuesta(response):
+        headers = response.headers
+        content_type = headers.get("content-type", "")
+        disposition = headers.get("content-disposition", "")
+
+        if (
+            "csv" in content_type.lower()
+            or "attachment" in disposition.lower()
+            or ".csv" in response.url.lower()
+        ):
+            respuestas.append(response)
+
+    def registrar_descarga(download):
+        descargas.append(download)
+
+    page.on("response", registrar_respuesta)
+    page.on("download", registrar_descarga)
+
+    try:
+        respuesta = page.goto(
+            url,
+            wait_until="domcontentloaded",
+            timeout=90000
+        )
+
+        page.wait_for_timeout(5000)
+
+        print(
+            f"{which}: HTTP "
+            f"{respuesta.status if respuesta else 'sin respuesta'}"
+        )
+
+        print(f"{which}: página = {page.title()}")
+
+        if respuesta and respuesta.status != 200:
+            raise RuntimeError(
+                f"{which}: error HTTP {respuesta.status}"
+            )
+
+        controles = []
+
+        for frame in page.frames:
+            locator = frame.get_by_text(
+                re.compile(r"Descarga\s+CSV", re.I)
+            )
+
+            for i in range(min(locator.count(), 10)):
+                elemento = locator.nth(i)
+
                 try:
-                    with page.expect_download(timeout=45000) as download_info:
-                        el.click(timeout=10000)
-                    download = download_info.value
-                    download.save_as(dest)
-                    if dest.stat().st_size < 500:
-                        raise RuntimeError('La descarga CSV está vacía')
-                    print(f'{which}: descargado {download.suggested_filename} ({dest.stat().st_size} bytes)')
-                    return
-                except Exception as exc:
-                    print(f'{which}: control CSV no produjo descarga: {str(exc)[:160]}', flush=True)
-    raise RuntimeError(f'{which}: no se detectó descarga CSV. Revisar selector/interacción del tabulado; se preservan los históricos.')
+                    if elemento.is_visible():
+                        controles.append(elemento)
+                except Exception:
+                    pass
+
+        print(
+            f"{which}: controles CSV visibles = "
+            f"{len(controles)}"
+        )
+
+        if not controles:
+            raise RuntimeError(
+                f"{which}: no se encontró un control CSV visible"
+            )
+
+        for numero, control in enumerate(controles, 1):
+            try:
+                print(
+                    f"{which}: probando control CSV {numero}"
+                )
+
+                control.click(timeout=10000)
+                page.wait_for_timeout(12000)
+
+                for download in descargas:
+                    try:
+                        download.save_as(dest)
+
+                        if dest.stat().st_size >= 500:
+                            print(
+                                f"{which}: descarga de navegador correcta"
+                            )
+                            return
+                    except Exception as exc:
+                        print(
+                            f"{which}: error al guardar descarga: "
+                            f"{exc}"
+                        )
+
+                for response in respuestas:
+                    try:
+                        if response.status != 200:
+                            continue
+
+                        body = response.body()
+
+                        if len(body) < 500:
+                            continue
+
+                        encabezado = body[:300].lower()
+
+                        if b"<html" in encabezado:
+                            continue
+
+                        if not (
+                            b"," in encabezado
+                            or b";" in encabezado
+                        ):
+                            continue
+
+                        dest.write_bytes(body)
+
+                        print(
+                            f"{which}: CSV recibido mediante HTTP "
+                            f"({len(body)} bytes)"
+                        )
+                        return
+
+                    except Exception as exc:
+                        print(
+                            f"{which}: respuesta no utilizable: "
+                            f"{exc}"
+                        )
+
+            except PlaywrightTimeout:
+                print(
+                    f"{which}: tiempo agotado al pulsar CSV"
+                )
+
+            except Exception as exc:
+                print(
+                    f"{which}: error del control: {exc}"
+                )
+
+        raise RuntimeError(
+            f"{which}: no se obtuvo CSV válido. "
+            "Revisar interacción del tabulado, "
+            "selección de series y posible reCAPTCHA."
+        )
+
+    finally:
+        page.remove_listener(
+            "response", registrar_respuesta
+        )
+        page.remove_listener(
+            "download", registrar_descarga
+        )
+
 
 def get_last(path):
     if not path.exists():
