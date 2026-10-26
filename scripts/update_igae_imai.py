@@ -72,12 +72,49 @@ def descargar(page, which, dest):
             )
 
         
+
         controles = []
 
-        selector = (
-            'a, button, input, [role="button"], '
-            '[title], [aria-label]'
-        )
+        for frame in page.frames:
+            locator = frame.locator(
+                'button, a, input, [role="button"], '
+                '[title], [aria-label]'
+            )
+
+            for i in range(min(locator.count(), 200)):
+                elemento = locator.nth(i)
+
+                try:
+                    if not elemento.is_visible():
+                        continue
+
+                    atributos = [
+                        elemento.inner_text(timeout=1000),
+                        elemento.get_attribute("title"),
+                        elemento.get_attribute("aria-label"),
+                        elemento.get_attribute("value")
+                    ]
+
+                    nombre = " ".join(
+                        str(x) for x in atributos if x
+                    )
+
+                    if re.search(
+                        r"(descarga\s*)?csv",
+                        nombre,
+                        re.IGNORECASE
+                    ):
+                        print(
+                            f"{which}: control encontrado: "
+                            f"{nombre[:150]}"
+                        )
+                        controles.append(elemento)
+
+                except Exception as exc:
+                    print(
+                        f"{which}: error examinando control: {exc}"
+                    )
+
 
         for frame in page.frames:
             elementos = frame.locator(selector)
