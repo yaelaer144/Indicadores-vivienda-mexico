@@ -65,56 +65,30 @@ def descargar(page, which, dest):
             f"{which}: sitio no disponible (HTTP {code})"
         )
 
-    controles = []
 
-    css = (
-        'button, a, input, [role="button"], '
-        '[title], [aria-label]'
+    # Localizar el control real de exportación CSV.
+    # El input btndescargacsv está oculto en el HTML.
+
+    csv_button = page.locator("#aCsv")
+
+    csv_button.wait_for(
+        state="visible",
+        timeout=30000
     )
 
-    for frame in page.frames:
-        elementos = frame.locator(css)
+    print(
+        f"{which}: icono CSV visible",
+        flush=True
+    )
 
-        for i in range(min(elementos.count(), 250)):
-            el = elementos.nth(i)
-
-            try:
-                if not el.is_visible():
-                    continue
-
-                attrs = [
-                    el.inner_text(timeout=800),
-                    el.get_attribute("title"),
-                    el.get_attribute("aria-label"),
-                    el.get_attribute("value"),
-                ]
-
-                nombre = " ".join(
-                    str(x) for x in attrs if x
-                )
-
-                if re.search(r"\bcsv\b", nombre, re.I):
-                    controles.append(el)
-
-                    print(
-                        f"{which}: control CSV encontrado: "
-                        f"{nombre[:120]}",
-                        flush=True,
-                    )
-
-            except Exception:
-                continue
+    controles = [csv_button]
 
     print(
         f"{which}: controles CSV visibles="
         f"{len(controles)}",
-        flush=True,
+        flush=True
     )
 
-    if not controles:
-        raise RuntimeError(
-            f"{which}: no se encontró un control CSV visible"
-        )
 
     def valido(blob):
         if len(blob) < 500:
