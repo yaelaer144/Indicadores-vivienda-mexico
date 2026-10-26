@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -247,8 +248,16 @@ def descargar(page, which, dest):
                     print(f"{which}: confirmando exportación CSV", flush=True)
                     boton_exportar.click(timeout=15000)
 
-                # El sitio puede generar el archivo con retardo.
-                page.wait_for_timeout(12000)
+                # Esperar eventos de descarga o respuesta real, no solo un plazo fijo.
+                limite = time.monotonic() + 35
+                while time.monotonic() < limite and not downloaded and not responses:
+                    page.wait_for_timeout(500)
+
+                print(
+                    f"{which}: eventos descarga={len(downloaded)}, "
+                    f"respuestas candidatas={len(responses)}",
+                    flush=True,
+                )
 
                 for d in downloaded:
                     with tempfile.TemporaryDirectory() as td:
@@ -300,11 +309,12 @@ def descargar(page, which, dest):
                 flush=True,
             )
 
+    print(f"{which}: URL={page.url}", flush=True)
+    print(f"{which}: errores HTTP={fallos_http[-12:]}", flush=True)
+    print(f"{which}: errores JavaScript={fallos_js[-8:]}", flush=True)
     raise RuntimeError(
-        f"{which}: se detectó el botón CSV, "
-        "pero no se recibió un archivo válido. "
-        "Puede requerir otra interacción o estar "
-        "protegido por reCAPTCHA. "
+        f"{which}: el exportador no entregó un CSV válido; "
+        "no se puede determinar aún si es un fallo temporal o del sitio. "
         "No se alteraron los históricos."
     )
 
@@ -496,14 +506,41 @@ def main():
                         locale="es-MX",
                     )
 
-                    page = context.new_page()
-
                     for which in ("IGAE", "IMAI"):
-                        descargar(
-                            page,
-                            which,
-                            temp / f"{which}.csv",
-                        )
+                        ultimo_error = None
+                        for intento in range(1, 4):
+                            # Cada intento usa una pestaña limpia para no
+                            # reutilizar estado JavaScript del tabulado previo.
+                            page = context.new_page()
+                            try:
+                                print(
+                                    f"{which}: descarga intento {intento}/3",
+                                    flush=True,
+                                )
+                                descargar(
+                                    page,
+                                    which,
+                                    temp / f"{which}.csv",
+                                )
+                                ultimo_error = None
+                                break
+                            except Exception as exc:
+                                ultimo_error = exc
+                                print(
+                                    f"{which}: intento {intento} falló: {exc}",
+                                    flush=True,
+                                )
+                            finally:
+                                page.close()
+
+                            if intento < 3:
+                                # Pausa breve entre intentos sin cambiar datos.
+                                time.sleep(5 * intento)
+
+                        if ultimo_error is not None:
+                            raise RuntimeError(
+                                f"{which}: fallaron los 3 intentos de CSV"
+                            ) from ultimo_error
 
                 finally:
                     browser.close()
