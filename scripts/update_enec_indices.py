@@ -29,7 +29,7 @@ IDS = {
 }
 COLUMNS = ['periodo', *IDS.keys(), 'base', 'fuente']
 API = ('https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/'
-       'INDICATOR/{id}/es/0/false/BIE-BISE/2.0/{token}?type=json')
+       'INDICATOR/{id}/es/00/false/BIE-BISE/2.0/{token}?type=json')
 UA = 'Mozilla/5.0 (compatible; indicadores-vivienda/1.0)'
 MONTH = re.compile(r'^((?:19|20)\d{2})[-/]?(0?[1-9]|1[0-2])$')
 
