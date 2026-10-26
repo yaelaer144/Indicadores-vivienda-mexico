@@ -48,6 +48,38 @@ with sync_playwright() as p:
 
             page.wait_for_timeout(8000)
 
+            print(
+                f"{nombre}: icono CSV visible = "
+                f"{page.locator('#aCsv').is_visible()}"
+            )
+
+            print(
+                f"{nombre}: botón Exportar visible = "
+                f"{page.locator('#myBtn').is_visible()}"
+            )
+
+            print(
+                f"{nombre}: contenedor de datos = "
+                f"{page.locator('#container1').inner_text()[:500]}"
+            )
+
+            csv = page.locator("#aCsv")
+
+            if csv.is_visible():
+                csv.click(timeout=10000)
+
+                page.wait_for_timeout(2000)
+
+                print(
+                    f"{nombre}: ventana de exportación = "
+                    f"{page.locator('#myModal').is_visible()}"
+                )
+
+                print(
+                    f"{nombre}: tipos de información = "
+                    f"{page.locator('#selectTipoInfo').all_text_contents()}"
+                )
+
             resultado["http"] = (
                 respuesta.status if respuesta else None
             )
