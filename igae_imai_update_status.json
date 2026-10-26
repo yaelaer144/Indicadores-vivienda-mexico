@@ -1,0 +1,11 @@
+{
+  "fecha_utc": "2026-10-26T17:48:32.858138+00:00",
+  "resultado": "ok",
+  "metodo": "playwright_tabulados",
+  "fuentes": {
+    "IGAE": "https://www.inegi.org.mx/app/tabulados/default.aspx?pr=10&vr=1&in=2&tp=20&wr=1&cno=1&idrt=3251&opc=p",
+    "IMAI": "https://www.inegi.org.mx/app/tabulados/default.aspx?pr=11&vr=1&in=2&tp=20&wr=1&cno=1&idrt=3252&opc=p"
+  },
+  "ultimo_igae": "2026-08",
+  "ultimo_imai": "2026-08"
+}
