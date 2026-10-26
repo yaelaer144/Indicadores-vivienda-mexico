@@ -149,8 +149,45 @@ def descargar(page, which, dest):
             page.on("response", on_response)
 
             try:
+
                 el.click(timeout=10000)
-                page.wait_for_timeout(10000)
+                page.wait_for_timeout(3000)
+
+                modal = page.locator("#myModal")
+
+                print(
+                    f"{which}: modal visible = "
+                    f"{modal.is_visible()}",
+                    flush=True
+                )
+
+                for campo in (
+                    "selectperiodoI",
+                    "selectperiodoF",
+                    "selectTipoInfo"
+                ):
+                    opciones = page.locator(
+                        f"#{campo} option"
+                    )
+
+                    print(
+                        f"{which}: {campo} = "
+                        f"{opciones.all_text_contents()[:30]}",
+                        flush=True
+                    )
+
+                print(
+                    f"{which}: Exportar visible = "
+                    f"{page.locator('#myBtn').is_visible()}",
+                    flush=True
+                )
+
+                if modal.is_visible():
+                    print(
+                        f"{which}: esperando configuración "
+                        "de exportación; sin confirmar descarga",
+                        flush=True
+                    )
 
                 for d in downloaded:
                     with tempfile.TemporaryDirectory() as td:
