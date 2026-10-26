@@ -53,6 +53,32 @@ def descargar(page, which, dest):
 
     page.wait_for_timeout(6000)
 
+            contenedor = page.locator("#container1")
+
+            print(
+                f"{nombre}: contenido del tabulado = "
+                f"{contenedor.inner_text()[:1500]}",
+                flush=True
+            )
+
+            print(
+                f"{nombre}: tablas generadas = "
+                f"{contenedor.locator('table').count()}",
+                flush=True
+            )
+
+            print(
+                f"{nombre}: opciones de periodo = "
+                f"{page.locator('#selectperiodoI option').count()}",
+                flush=True
+            )
+
+            print(
+                f"{nombre}: scripts cargados = "
+                f"{page.locator('script[src]').count()}",
+                flush=True
+            )
+
     code = response.status if response else None
 
     print(
