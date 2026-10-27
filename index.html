@@ -1,46 +1,88 @@
+
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
-  <meta name="generator" content="GitHub Pages ready · 20260911 · corrección ICC">
+  <meta name="generator" content="GitHub Pages · actualización ENEC · 20261027">
   <title>Indicadores de Vivienda y Construcción Residencial en México</title>
-  <link rel="stylesheet" href="styles.css?v=20261013quarterfix">
+  <link rel="stylesheet" href="styles.css?v=20261027enec4">
 </head>
 <body>
 <div class="app">
   <aside class="sidebar" id="sidebar">
-    <div class="brand"><div class="brand-mark">i</div><div><strong>INFONAVIT · Estudios</strong><span>Vivienda y construcción residencial</span></div></div>
-    <div class="sidebar-explorer"><strong>Explorador de indicadores</strong><span>Selecciona una sección</span></div>
+    <div class="brand">
+      <div class="brand-mark">i</div>
+      <div>
+        <strong>INFONAVIT · Estudios</strong>
+        <span>Vivienda y construcción residencial</span>
+      </div>
+    </div>
+
+    <div class="sidebar-explorer">
+      <strong>Explorador de indicadores</strong>
+      <span>Selecciona una sección</span>
+    </div>
+
     <nav class="nav" aria-label="Secciones">
-      <button class="active" data-page="summary"><span class="ico">▦</span>Resumen</button>
-      <button data-page="activity"><span class="ico">▥</span>Sector de construcción</button>
-      <button data-page="labor"><span class="ico">◫</span>Mercado laboral sector de construcción</button>
-      <button data-page="production"><span class="ico">⌂</span>Producción de vivienda</button>
-      <button data-page="prices"><span class="ico">⌁</span>Precios y costos de vivienda</button>
-      <button data-page="conditions"><span class="ico">◇</span>Condiciones habitacionales</button>
+      <button class="active" data-page="summary">
+        <span class="ico">▦</span>Resumen
+      </button>
+      <button data-page="activity">
+        <span class="ico">▥</span>Sector de construcción
+      </button>
+      <button data-page="labor">
+        <span class="ico">◫</span>Mercado laboral sector de construcción
+      </button>
+      <button data-page="production">
+        <span class="ico">⌂</span>Producción de vivienda
+      </button>
+      <button data-page="prices">
+        <span class="ico">⌁</span>Precios y costos de vivienda
+      </button>
+      <button data-page="conditions">
+        <span class="ico">◇</span>Condiciones habitacionales
+      </button>
+
       <div class="utility-menu">
         <details>
           <summary>Información complementaria</summary>
           <div class="utility-nav">
-            <button data-page="methodology"><span class="ico">≡</span>Metodología</button>
-            <button data-page="sources"><span class="ico">↗</span>Fuentes</button>
-            <button data-page="updates"><span class="ico">↻</span>Cortes de información</button>
+            <button data-page="methodology">
+              <span class="ico">≡</span>Metodología
+            </button>
+            <button data-page="sources">
+              <span class="ico">↗</span>Fuentes
+            </button>
+            <button data-page="updates">
+              <span class="ico">↻</span>Cortes de información
+            </button>
           </div>
         </details>
       </div>
     </nav>
-    <div class="sidebar-foot"><p>Las gráficas muestran siempre su unidad, fuente y periodo. Consulta Metodología para conocer las diferencias entre universos e indicadores.</p></div>
+
+    <div class="sidebar-foot">
+      <p>Las gráficas muestran siempre su unidad, fuente y periodo. Consulta Metodología para conocer las diferencias entre universos e indicadores.</p>
+    </div>
   </aside>
 
   <main class="main">
     <header class="hero">
       <button class="mobile" id="mobileMenu" aria-label="Abrir menú">☰</button>
-      <div class="eyebrow">INFONAVIT · Estudios Económicos · Sistema de indicadores</div>
+      <div class="eyebrow">
+        INFONAVIT · Estudios Económicos · Sistema de indicadores
+      </div>
       <h1>Indicadores de Vivienda y Construcción Residencial en México</h1>
     </header>
-    <div class="toolbar toolbar-compact"><div class="toolbar-right" id="update-status-line">Última actualización: pendiente</div></div>
+
+    <div class="toolbar toolbar-compact">
+      <div class="toolbar-right" id="update-status-line">
+        Última actualización: pendiente
+      </div>
+    </div>
+
     <div class="content">
       <section class="page active" id="page-summary"></section>
       <section class="page" id="page-activity"></section>
@@ -51,20 +93,38 @@
       <section class="page" id="page-methodology"></section>
       <section class="page" id="page-sources"></section>
       <section class="page" id="page-updates"></section>
-      <div class="footer-note">El dashboard no interpola datos faltantes ni transforma observaciones parciales en cierres anuales. Revisa Metodología y Fuentes antes de reutilizar las cifras.</div>
+
+      <div class="footer-note">
+        El dashboard no interpola datos faltantes ni transforma observaciones parciales en cierres anuales. Revisa Metodología y Fuentes antes de reutilizar las cifras.
+      </div>
     </div>
   </main>
 </div>
+
+<!-- 1. Librería de gráficos -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="bootstrap-data.js?v=20261013quarterfix"></script>
-<script src="ruv-produccion.js?v=20261013quarterfix"></script>
-<script src="charts.js?v=20261027enec3"></script>
-<script src="app.js?v=20261027enec3"></script>
-<script src="local-data.js?v=20261013quarterfix"></script>
-<script src="data-loader.js?v=20261027enec"></script>
-<script src="indicators.js?v=20261013quarterfix"></script>
-<script src="maps.js?v=20261013quarterfix"></script>
-<script src="updates.js?v=20261013quarterfix"></script>
-<script src="ruv-loader.js?v=20261013quarterfix"></script>
+
+<!-- 2. Bases de datos iniciales -->
+<script src="bootstrap-data.js?v=20261027enec4"></script>
+<script src="ruv-produccion.js?v=20261027enec4"></script>
+<script src="local-data.js?v=20261027enec4"></script>
+
+<!-- 3. Cargador y procesamiento de datos -->
+<script src="data-loader.js?v=20261027enec4"></script>
+
+<!-- 4. Componentes visuales y formatos -->
+<script src="indicators.js?v=20261027enec4"></script>
+
+<!-- 5. Gráficas, mapas y actualizaciones -->
+<script src="charts.js?v=20261027enec4"></script>
+<script src="maps.js?v=20261027enec4"></script>
+<script src="updates.js?v=20261027enec4"></script>
+
+<!-- 6. Inicialización de la aplicación -->
+<script src="app.js?v=20261027enec4"></script>
+
+<!-- 7. Actualización complementaria de RUV -->
+<script src="ruv-loader.js?v=20261027enec4"></script>
+
 </body>
 </html>
