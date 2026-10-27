@@ -5,7 +5,7 @@ on:
   schedule:
     # Cada mes el dia 20, 15:40 UTC (09:40 o 10:40 de CDMX segun estacion).
     # Si INEGI publica despues, el siguiente mes recupera los datos pendientes.
-    - cron: '40 15 20 * *'
+    - cron: '40 15 * * *'
 
 permissions:
   contents: write
