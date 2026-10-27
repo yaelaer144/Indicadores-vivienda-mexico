@@ -254,8 +254,76 @@
       const p=D.labor.monthly_indices.map(x=>x.period);
       line('lab-personal',p,[ds('Construcción',D.labor.monthly_indices.map(x=>x.empl_const),blue),ds('Edificación',D.labor.monthly_indices.map(x=>x.empl_edif),brand)],{beginAtZero:false,yTitle:'Índice · Base 2018=100'});
       variationLine('lab-personal-var',p,[ds('Construcción',sameMonth(D.labor.monthly_indices,'empl_const'),blue),ds('Edificación',sameMonth(D.labor.monthly_indices,'empl_edif'),brand)],'Variación anual porcentual (%)','%');
-      line('lab-hours',p,[ds('Construcción',trendCycle(D.labor.monthly_indices.map(x=>x.hours_const)),blue),ds('Edificación',trendCycle(D.labor.monthly_indices.map(x=>x.hours_edif)),brand)],{beginAtZero:false,yTitle:'Índice · Base 2018=100'});
-      line('lab-rem',p,[ds('Construcción',trendCycle(D.labor.monthly_indices.map(x=>x.rem_const)),blue),ds('Edificación',trendCycle(D.labor.monthly_indices.map(x=>x.rem_edif)),brand)],{beginAtZero:false,yTitle:'Índice · Base 2018=100'});
+     
+      // ENEC: índices y variaciones anuales.
+      // Se conserva el suavizado existente.
+
+      const enecHoursConst = trendCycle(
+        D.labor.monthly_indices.map(x => x.hours_const)
+      );
+
+      const enecHoursEdif = trendCycle(
+        D.labor.monthly_indices.map(x => x.hours_edif)
+      );
+
+      const enecRemConst = trendCycle(
+        D.labor.monthly_indices.map(x => x.rem_const)
+      );
+
+      const enecRemEdif = trendCycle(
+        D.labor.monthly_indices.map(x => x.rem_edif)
+      );
+
+      // Variación respecto al mismo mes del año anterior.
+      const enecAnnual = values =>
+        values.map((value, i) => {
+          if (i < 12) return null;
+
+          const previous = values[i - 12];
+
+          if (
+            value == null ||
+            previous == null ||
+            previous === 0 ||
+            !Number.isFinite(value) ||
+            !Number.isFinite(previous)
+          ) return null;
+
+          return (value / previous - 1) * 100;
+        });
+
+      // Horas trabajadas: niveles
+      line('lab-hours', p, [
+        ds('Construcción', enecHoursConst, blue),
+        ds('Edificación', enecHoursEdif, brand)
+      ], {
+        beginAtZero: false,
+        yTitle: 'Índice · Base 2018=100',
+        decimals: 1
+      });
+
+      // Horas trabajadas: variaciones anuales
+      variationLine('lab-hours-var', p, [
+        ds('Construcción', enecAnnual(enecHoursConst), blue),
+        ds('Edificación', enecAnnual(enecHoursEdif), brand)
+      ], 'Variación anual porcentual (%)', '%');
+
+      // Remuneraciones: niveles
+      line('lab-rem', p, [
+        ds('Construcción', enecRemConst, blue),
+        ds('Edificación', enecRemEdif, brand)
+      ], {
+        beginAtZero: false,
+        yTitle: 'Índice · Base 2018=100',
+        decimals: 1
+      });
+
+      // Remuneraciones: variaciones anuales
+      variationLine('lab-rem-var', p, [
+        ds('Construcción', enecAnnual(enecRemConst), blue),
+        ds('Edificación', enecAnnual(enecRemEdif), brand)
+      ], 'Variación anual porcentual (%)', '%');
+
       const salP=D.labor.salary_monthly.map(x=>x.period), salV=D.labor.salary_monthly.map(x=>x.daily*30.4);
       line('lab-salary',salP,[ds('SBC mensual promedio',salV,green)],{beginAtZero:false,yTitle:'Pesos corrientes por mes',suffix:' MXN/mes'});
       variationLine('lab-salary-var',salP,[ds('Variación anual porcentual',sameMonth(D.labor.salary_monthly,'daily'),green)],'Variación anual porcentual (%)','%');
