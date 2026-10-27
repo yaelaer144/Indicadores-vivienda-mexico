@@ -1,0 +1,42 @@
+name: ENEC produccion - validacion y actualizacion mensual
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 16 26 * *'
+permissions:
+  contents: write
+concurrency:
+  group: vivienda-actualizacion
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Consultar y validar produccion ENEC
+        id: consultar
+        continue-on-error: true
+        env:
+          INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
+          INEGI_ID_ENEC_PROD_EDIFICACION: ${{ vars.INEGI_ID_ENEC_PROD_EDIFICACION }}
+          INEGI_ID_ENEC_PROD_PUBLICA: ${{ vars.INEGI_ID_ENEC_PROD_PUBLICA }}
+          INEGI_ID_ENEC_PROD_PRIVADA: ${{ vars.INEGI_ID_ENEC_PROD_PRIVADA }}
+        run: python scripts/update_enec_produccion.py
+      - name: Reconstruir datos del dashboard
+        if: steps.consultar.outcome == 'success'
+        run: python scripts/rebuild_local_data.py
+      - name: Guardar CSV y resultado
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add enec_actividad_historica.csv enec_produccion_update_status.json local-data.js
+          git diff --cached --quiet || (git commit -m 'Validar y actualizar ENEC produccion' && git pull --rebase && git push)
+      - name: Informar error de validacion
+        if: steps.consultar.outcome != 'success'
+        run: exit 1
