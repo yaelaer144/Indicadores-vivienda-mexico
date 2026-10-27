@@ -90,33 +90,52 @@
     if(enecLaborRows.length){
       D.labor.monthly_indices=enecLaborRows.map(r=>({period:pick(r,['periodo','period']),empl_const:num(pick(r,['personal_construccion'])),empl_edif:num(pick(r,['personal_edificacion'])),hours_const:num(pick(r,['horas_construccion'])),hours_edif:num(pick(r,['horas_edificacion'])),rem_const:num(pick(r,['remuneraciones_construccion'])),rem_edif:num(pick(r,['remuneraciones_edificacion']))})).filter(x=>x.period&&x.empl_const!=null).sort((a,b)=>String(a.period).localeCompare(String(b.period)));
     }
-    if(enecWorkerTypeRows.length){
-      const momRows=enecWorkerTypeRows.map(r=>({period:pick(r,['periodo','period']),total:num(pick(r,['total_mom_pct','personal_total_pct'])),workers:num(pick(r,['obreros_mom_pct','obreros_pct'])),admin:num(pick(r,['administrativos_mom_pct','administrativos_pct']))})).filter(x=>x.period&&(x.total!=null||x.workers!=null||x.admin!=null)).sort((a,b)=>String(a.period).localeCompare(String(b.period)));
-      D.labor.enec_worker_type_mom=momRows;
-      const chain=[];
-      momRows.forEach((row,i)=>{
-        const prev=chain[i-1];
-        const nextValue=(momKey,levelKey)=>{
-          const g=row[momKey];
-          if(i===0) return 100;
-          const prevLevel=prev?.[levelKey];
-          return (prevLevel!=null && g!=null) ? prevLevel*(1+g/100) : null;
+    
+    // ENEC: indices oficiales por tipo de trabajador.
+    // INEGI, serie 2018. Variaciones anuales.
+    if(enecLaborRows.length){
+      const rows = enecLaborRows.map(r => ({
+        period: pick(r, ['periodo', 'period']),
+        total: num(pick(r, ['personal_construccion'])),
+        workers: num(pick(r, ['personal_obreros'])),
+        admin: num(pick(r, ['personal_administrativos']))
+      }))
+      .filter(r =>
+        r.period &&
+        r.total != null &&
+        r.workers != null &&
+        r.admin != null
+      )
+      .sort((a,b) => a.period.localeCompare(b.period));
+
+      const byPeriod = new Map(
+        rows.map(r => [r.period, r])
+      );
+
+      const yoy = (current, previous) =>
+        current != null &&
+        previous != null &&
+        previous !== 0
+          ? (current / previous - 1) * 100
+          : null;
+
+      D.labor.enec_worker_type_index = rows.map(r => {
+        const previousPeriod =
+          `${Number(r.period.slice(0,4)) - 1}-${r.period.slice(5,7)}`;
+
+        const previous = byPeriod.get(previousPeriod);
+
+        return {
+          ...r,
+          total_yoy: yoy(r.total, previous?.total),
+          workers_yoy: yoy(r.workers, previous?.workers),
+          admin_yoy: yoy(r.admin, previous?.admin)
         };
-        chain.push({
-          period:row.period,
-          total:nextValue('total','total'),
-          workers:nextValue('workers','workers'),
-          admin:nextValue('admin','admin')
-        });
       });
-      const byPeriod=new Map(chain.map(r=>[r.period,r]));
-      const prevYearPeriod=period=>{const m=String(period||'').match(/^(20\d{2})-(\d{2})$/);return m?`${Number(m[1])-1}-${m[2]}`:null;};
-      D.labor.enec_worker_type_index=chain.map(r=>{
-        const prev=byPeriod.get(prevYearPeriod(r.period));
-        const yoyCalc=(cur,base)=>(cur!=null&&base!=null&&base!==0)?((cur/base)-1)*100:null;
-        return {...r,total_yoy:yoyCalc(r.total,prev?.total),workers_yoy:yoyCalc(r.workers,prev?.workers),admin_yoy:yoyCalc(r.admin,prev?.admin)};
-      });
+
+      D.labor.enec_worker_type_mom = [];
     }
+
     if(enecHousingRows.length){
       D.production.enec_housing_yoy=enecHousingRows.map(r=>({period:pick(r,['periodo','period']),edification:num(pick(r,['edificacion_yoy_pct','edificacion_yoy'])),housing:num(pick(r,['vivienda_yoy_pct','vivienda_yoy']))})).filter(x=>x.period&&(x.edification!=null||x.housing!=null)).sort((a,b)=>String(a.period).localeCompare(String(b.period)));
     }
