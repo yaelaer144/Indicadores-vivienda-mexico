@@ -261,10 +261,27 @@
       variationLine('lab-salary-var',salP,[ds('Variación anual porcentual',sameMonth(D.labor.salary_monthly,'daily'),green)],'Variación anual porcentual (%)','%');
       const wt=D.labor.enec_worker_type_index||[];
       if(wt.length){
-        const wtLabels=wt.map(x=>x.period);
-        line('lab-enec-worker-type',wtLabels,[ds('Personal total',wt.map(x=>x.total),grey),ds('Obreros',wt.map(x=>x.workers),brand),ds('Administrativos',wt.map(x=>x.admin),blue)],{beginAtZero:false,yTitle:'Índice encadenado · base ene 2024=100',decimals:1});
-        variationLine('lab-enec-worker-type-var',wtLabels,[ds('Personal total',wt.map(x=>x.total_yoy),grey),ds('Obreros',wt.map(x=>x.workers_yoy),brand),ds('Administrativos',wt.map(x=>x.admin_yoy),blue)],'Variación anual porcentual (%)','%');
+        const wtLabels = wt.map(x => x.period);
+
+        // Índices oficiales ENEC, base 2018=100
+        line('lab-enec-worker-type', wtLabels, [
+          ds('Personal total', wt.map(x => x.total), grey),
+          ds('Obreros', wt.map(x => x.workers), brand),
+          ds('Administrativos', wt.map(x => x.admin), blue)
+        ], {
+          beginAtZero: false,
+          yTitle: 'Índice · base 2018=100',
+          decimals: 1
+        });
+
+        // Variaciones porcentuales anuales
+        variationLine('lab-enec-worker-type-var', wtLabels, [
+          ds('Personal total', wt.map(x => x.total_yoy), grey),
+          ds('Obreros', wt.map(x => x.workers_yoy), brand),
+          ds('Administrativos', wt.map(x => x.admin_yoy), blue)
+        ], 'Variación anual porcentual (%)', '%');
       }
+
 
       // Producción
       line('prod-flow',D.production.years,[ds('Registradas',D.production.registered,blue),ds('Inicio de obra',D.production.started,gold),ds('Terminadas / producción',D.production.finished,brand)],{beginAtZero:false,yTitle:'Miles de viviendas'});
