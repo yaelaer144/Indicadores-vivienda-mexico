@@ -19,14 +19,25 @@ from urllib.parse import quote
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'enec_indices_laborales_mensual.csv'
 STATUS = ROOT / 'enec_indices_update_status.json'
+
 IDS = {
+    # Personal ocupado total
     'personal_construccion': '720286',
     'personal_edificacion': '722171',
+
+    # Personal ocupado por tipo de trabajador
+    'personal_obreros': '720290',
+    'personal_administrativos': '720292',
+
+    # Horas trabajadas - series actuales
     'horas_construccion': '720298',
     'horas_edificacion': '722195',
+
+    # Remuneraciones - series actuales
     'remuneraciones_construccion': '720318',
     'remuneraciones_edificacion': '722235',
 }
+
 COLUMNS = ['periodo', *IDS.keys(), 'base', 'fuente']
 API = ('https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/'
        'INDICATOR/{id}/es/00/false/BIE-BISE/2.0/{token}?type=json')
