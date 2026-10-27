@@ -73,6 +73,7 @@ jobs:
                       f"{nombre}: se recibieron {len(series)} series"
                   )
 
+
               serie = series[0]
               obs = serie.get("OBSERVATIONS") or []
               obs = [
@@ -89,12 +90,46 @@ jobs:
               print("Observaciones:", len(obs))
               print("Primeros registros:", obs[:2])
               print("Ultimos registros:", obs[-3:])
+
+              # Consultar descripcion oficial de la unidad
+              unidad_id = serie.get("UNIT")
+
+              meta_url = (
+                  "https://www.inegi.org.mx/app/api/"
+                  "indicadores/desarrolladores/jsonxml/"
+                  f"CL_UNIT/{unidad_id}/es/"
+                  f"BIE-BISE/2.0/{token}?type=json"
+              )
+
+              try:
+                  req_meta = urllib.request.Request(
+                      meta_url,
+                      headers={"User-Agent": "Mozilla/5.0"}
+                  )
+
+                  with urllib.request.urlopen(
+                      req_meta, timeout=90
+                  ) as response:
+                      metadata = json.load(response)
+
+                  print(
+                      "Descripcion de unidad:",
+                      metadata.get("CODE")
+                  )
+
+              except Exception as exc:
+                  print(
+                      "No se pudo consultar la unidad:",
+                      exc
+                  )
+
           PY
 
       - name: Consultar seis indices ENEC en INEGI
         env:
           INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
         run: python scripts/update_enec_indices.py
+
 
       - name: Validar archivo y cobertura
         run: |
