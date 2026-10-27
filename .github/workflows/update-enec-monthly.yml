@@ -34,6 +34,63 @@ jobs:
       - name: Validar codigo
         run: python -m py_compile scripts/update_enec_indices.py scripts/rebuild_local_data.py
 
+      - name: Diagnosticar ENEC produccion
+        env:
+          INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os
+          import json
+          import urllib.request
+          from urllib.parse import quote
+
+          token = quote(os.environ["INEGI_API_TOKEN"], safe="")
+
+          ids = {
+              "construccion": "723135",
+              "edificacion": "720648",
+          }
+
+          for nombre, indicador in ids.items():
+              url = (
+                  "https://www.inegi.org.mx/app/api/"
+                  "indicadores/desarrolladores/jsonxml/"
+                  f"INDICATOR/{indicador}/es/00/false/"
+                  f"BIE-BISE/2.0/{token}?type=json"
+              )
+
+              req = urllib.request.Request(
+                  url,
+                  headers={"User-Agent": "Mozilla/5.0"}
+              )
+
+              with urllib.request.urlopen(req, timeout=90) as r:
+                  data = json.load(r)
+
+              series = data.get("Series") or []
+              if len(series) != 1:
+                  raise RuntimeError(
+                      f"{nombre}: se recibieron {len(series)} series"
+                  )
+
+              serie = series[0]
+              obs = serie.get("OBSERVATIONS") or []
+              obs = [
+                  x for x in obs
+                  if x.get("OBS_VALUE") not in
+                  (None, "", "N/E", "NA")
+              ]
+
+              print(f"\nINDICADOR: {nombre}")
+              print("ID:", indicador)
+              print("Descripcion:", serie.get("INDICADOR"))
+              print("Frecuencia:", serie.get("FREQ"))
+              print("Unidad:", serie.get("UNIT"))
+              print("Observaciones:", len(obs))
+              print("Primeros registros:", obs[:2])
+              print("Ultimos registros:", obs[-3:])
+          PY
+
       - name: Consultar seis indices ENEC en INEGI
         env:
           INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
