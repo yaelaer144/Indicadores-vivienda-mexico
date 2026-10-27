@@ -73,8 +73,31 @@
       ${U.dualCard('lab-imss','lab-imss-var','Trabajadores afiliados al IMSS',D.labor.imss_monthly?.some(x=>x.edification!=null)?'Millones de trabajadores afiliados · construcción y edificación · periodicidad mensual':'Millones de trabajadores afiliados · construcción · periodicidad mensual','<strong>Qué mide:</strong> número de trabajadores afiliados al Instituto Mexicano del Seguro Social (IMSS) dentro del sector construcción.','Variación anual porcentual','Porcentaje · mismo mes del año anterior','Muestra los trabajadores afiliados cada mes, expresados en millones.','Muestra la variación porcentual respecto al mismo mes del año anterior.')}
       ${U.dualCard('lab-personal','lab-personal-var','Índice de personal ocupado','Construcción vs. edificación · ENEC · Base 2018=100 · periodicidad mensual','<strong>Qué mide:</strong> la ENEC permite observar <b>mensualmente</b> cómo cambia el personal ocupado en el total de empresas constructoras y específicamente en edificación. Los índices toman <b>2018=100</b> como periodo de referencia.','Variación anual porcentual','Porcentaje · mismo mes del año anterior','Nivel mensual del índice con referencia 2018=100.','Variación porcentual respecto al mismo mes del año anterior.')}
       ${U.dualCard('lab-enec-worker-type','lab-enec-worker-type-var','Índice de personal ocupado por tipo de trabajador','ENEC · índice encadenado a partir de la serie desestacionalizada · base ene 2024=100','<strong>Qué mide:</strong> muestra la trayectoria del personal ocupado por tipo de trabajador en las empresas constructoras e identifica si el movimiento se concentra en el <b>personal total</b>, los <b>obreros</b> o los <b>empleados administrativos, contables y de dirección</b>. <div class="note">El índice se construye encadenando la variación mensual desestacionalizada publicada por la ENEC y se fija en <b>ene 2024=100</b> como referencia operativa para el dashboard.</div>','Variación anual porcentual','Porcentaje · mismo mes del año anterior','Nivel mensual del índice encadenado para cada tipo de trabajador.','Variación porcentual respecto al mismo mes del año anterior, calculada a partir del índice encadenado.') }
-      ${U.card('lab-hours','Índice de horas trabajadas · tendencia-ciclo','Construcción vs. edificación · ENEC · Base 2018=100 · suavizado centrado de 5 meses','<strong>Qué mide:</strong> la ENEC permite observar <b>mensualmente</b> la evolución del volumen de horas trabajadas en construcción y edificación. Los índices toman <b>2018=100</b> como periodo de referencia.',true)}
-      ${U.card('lab-rem','Índice de remuneraciones medias por persona ocupada · tendencia-ciclo','Construcción vs. edificación · ENEC · Base 2018=100 · suavizado centrado de 5 meses','<strong>Qué mide:</strong> la ENEC permite observar <b>mensualmente</b> la evolución de las remuneraciones medias reales por persona ocupada. Los índices toman <b>2018=100</b> como periodo de referencia.',true)}
+    
+      ${U.dualCard(
+        'lab-hours',
+        'lab-hours-var',
+        'Índice de horas trabajadas · tendencia suavizada',
+        'Construcción vs. edificación · ENEC · Base 2018=100 · suavizado centrado de 5 meses',
+        '<strong>Qué mide:</strong> la evolución mensual del índice de horas trabajadas en construcción y edificación. Se aplica un suavizado centrado de cinco meses a las series originales de ENEC.',
+        'Variación anual porcentual',
+        'Porcentaje · mismo mes del año anterior',
+        'Índices base 2018=100, con suavizado centrado de cinco meses.',
+        'Variación porcentual anual calculada sobre los índices suavizados.'
+      )}
+
+      ${U.dualCard(
+        'lab-rem',
+        'lab-rem-var',
+        'Índice de remuneraciones medias por persona ocupada · tendencia suavizada',
+        'Construcción vs. edificación · ENEC · Base 2018=100 · suavizado centrado de 5 meses',
+        '<strong>Qué mide:</strong> la evolución mensual de las remuneraciones en construcción y edificación, según los índices ENEC disponibles. Se aplica un suavizado centrado de cinco meses.',
+        'Variación anual porcentual',
+        'Porcentaje · mismo mes del año anterior',
+        'Índices base 2018=100, con suavizado centrado de cinco meses.',
+        'Variación porcentual anual calculada sobre los índices suavizados.'
+      )}
+
       ${U.dualCard('lab-salary','lab-salary-var','Salario promedio en construcción',`SBC mensual equivalente · IMSS · ${fmtMonth(firstSalary?.period)}–${fmtMonth(latestSalary?.period)}`,'<strong>Qué mide:</strong> el Salario Base de Cotización promedio registrado ante el IMSS, expresado como equivalente mensual (SBC diario × 30.4).','Variación anual porcentual','Porcentaje · mismo mes del año anterior','Muestra el SBC mensual equivalente en pesos corrientes; no es un salario contractual mensual.','Muestra la variación porcentual respecto al mismo mes del año anterior.')}
     </div>`;
   }
