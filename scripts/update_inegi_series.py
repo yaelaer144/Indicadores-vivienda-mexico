@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 ROOT=Path(__file__).resolve().parents[1]
 START_MONTH='2016-01'
-START_QUARTER='2018-T1'
+START_QUARTER='2016-T1'
 START_YEAR='2016'
 TOKEN=os.environ.get('INEGI_API_TOKEN','').strip().strip('\"').strip("'")
 API='https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/{id}/es/00/false/{source}/2.0/{token}?type=json'
