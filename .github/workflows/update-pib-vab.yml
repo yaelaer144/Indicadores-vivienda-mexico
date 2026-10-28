@@ -1,0 +1,28 @@
+name: Actualizar PIB VAB trimestral
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 14 25 2,5,8,11 *'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Descargar INEGI mediante formulario
+        run: python scripts/download_pib_vab_inegi.py --output PIBT_actualizado.xlsx
+      - name: Procesar y validar PIB/VAB
+        run: python scripts/update_pib_vab_trimestral.py --input PIBT_actualizado.xlsx
+      - name: Publicar series validadas
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pib_vab_construccion_trimestral.csv pib_vab_update_status.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Actualización trimestral PIB VAB INEGI'
+            git push
+          fi
