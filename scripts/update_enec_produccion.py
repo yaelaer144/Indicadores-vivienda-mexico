@@ -1,835 +1,232 @@
-
 #!/usr/bin/env python3
-"""Actualización ENEC mediante el servicio PxWeb de INEGI."""
-
+"""Actualiza índices ENEC desde el tabulado PxWeb oficial de INEGI."""
 import csv
-import itertools
 import json
+import math
 import re
 import statistics
 import sys
-import urllib.request
+import unicodedata
 import urllib.error
-
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-
 DEST = ROOT / "enec_actividad_historica.csv"
 STATUS = ROOT / "enec_produccion_update_status.json"
-
+ORIGINAL = ROOT / "enec_produccion_inegi_original.json"
+EXCEL = ROOT / "enec_produccion_inegi.xlsx"
 URL = "https://www.inegi.org.mx/app/tabulados/pxwebapi/api/datatable"
-
 START = "2016-01"
-
-CODES = {
-    "29": "edificacion_indice",
-    "28": "publico_indice",
-    "21": "privado_indice",
-}
-
-MONTHS = {
-    "enero": 1,
-    "febrero": 2,
-    "marzo": 3,
-    "abril": 4,
-    "mayo": 5,
-    "junio": 6,
-    "julio": 7,
-    "agosto": 8,
-    "septiembre": 9,
-    "octubre": 10,
-    "noviembre": 11,
-    "diciembre": 12,
-}
+COLUMNS = [
+    ("29", "edificacion_indice", "indice de edificacion"),
+    ("28", "publico_indice", "indice de sector publico"),
+    ("21", "privado_indice", "indice de sector privado"),
+]
+MONTH_NAMES = [
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+]
+FIELDS = ["periodo", "edificacion_indice", "publico_indice", "privado_indice", "unidad", "fuente", "nota"]
 
 
-def payload():
+def normalize(value):
+    value = unicodedata.normalize("NFD", str(value).casefold())
+    return "".join(c for c in value if unicodedata.category(c) != "Mn")
+
+
+def make_payload():
+    def select(code, values, filt="item"):
+        return {"code": code, "selection": {"filter": filt, "values": values}}
+
     return {
         "query": {
             "query": [
-                {
-                    "code": "Variable",
-                    "selection": {
-                        "filter": "item",
-                        "values": list(CODES),
-                    },
-                },
-                {
-                    "code": "Tipo de dato",
-                    "selection": {
-                        "filter": "item",
-                        "values": ["0"],
-                    },
-                },
-                {
-                    "code": "Sector SCIAN",
-                    "selection": {
-                        "filter": "item",
-                        "values": ["0"],
-                    },
-                },
-                {
-                    "code": "Año",
-                    "selection": {
-                        "filter": "all",
-                        "values": ["*"],
-                    },
-                },
-                {
-                    "code": "Mes",
-                    "selection": {
-                        "filter": "all",
-                        "values": ["*"],
-                    },
-                },
+                select("Variable", [item[0] for item in COLUMNS]),
+                select("Tipo de dato", ["0"]),
+                select("Sector SCIAN", ["0"]),
+                select("Año", ["*"], "all"),
+                select("Mes", ["*"], "all"),
             ],
-            "response": {
-                "format": "json-stat",
-            },
+            "response": {"format": "json-stat"},
         },
         "lang": "es",
         "file": "ENEC/ENEC_NACIONAL_36",
-        "stub": [
-            "Variable",
-            "Tipo de dato",
-            "Sector SCIAN",
-        ],
-        "heading": [
-            "Año",
-            "Mes",
-        ],
+        "stub": ["Variable", "Tipo de dato", "Sector SCIAN"],
+        "heading": ["Año", "Mes"],
     }
 
 
-
 def fetch():
-    """Consulta ENEC y examina la estructura real del tabulado."""
-
-    body = json.dumps(
-        payload(),
-        ensure_ascii=False
-    ).encode("utf-8")
-
+    body = json.dumps(make_payload(), ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(
-        URL,
-        data=body,
-        method="POST",
+        URL, data=body, method="POST",
         headers={
             "Content-Type": "application/json; charset=utf-8",
             "Accept": "application/json",
             "User-Agent": "Mozilla/5.0",
         },
     )
-
-    with urllib.request.urlopen(req, timeout=90) as response:
-        raw = response.read()
-        print(
-            f"INEGI: HTTP {response.status}; "
-            f"bytes={len(raw)}",
-            flush=True
-        )
-
+    try:
+        with urllib.request.urlopen(req, timeout=90) as response:
+            raw = response.read()
+            print(f"INEGI PxWeb: HTTP {response.status}; bytes={len(raw)}", flush=True)
+    except urllib.error.HTTPError as exc:
+        detail = exc.read(500).decode("utf-8", errors="replace")
+        raise ValueError(f"INEGI HTTP {exc.code}: {detail}") from exc
     result = json.loads(raw)
-
-    print("=== ESTRUCTURA DE RESPUESTA ENEC ===", flush=True)
-    print("Claves:", list(result.keys()), flush=True)
-    print("rowCount:", result.get("rowCount"), flush=True)
-    print("colCount:", result.get("colCount"), flush=True)
-    print("matrixSize:", result.get("matrixSize"), flush=True)
-
-    for field in ("heading", "stub", "notes"):
-        print(
-            f"{field}:",
-            json.dumps(
-                result.get(field),
-                ensure_ascii=False,
-                default=str
-            )[:5000],
-            flush=True
-        )
-
-    values = result.get("data", [])
-
-    print(
-        "Cantidad de elementos data:",
-        len(values),
-        flush=True
-    )
-
-    print(
-        "Primeros 12 elementos data:",
-        json.dumps(
-            values[:12],
-            ensure_ascii=False,
-            default=str
-        ),
-        flush=True
-    )
-
-    print("=== FIN DEL DIAGNÓSTICO ===", flush=True)
-
+    if not isinstance(result, dict):
+        raise ValueError("La respuesta de INEGI no es un objeto JSON")
+    print(f"INEGI: campos={list(result)}; filas={result.get('rowCount')}; columnas={result.get('colCount')}", flush=True)
     return result
 
 
-
-def unwrap_jsonstat(data):
-    """Reconoce JSON-stat directo o envuelto."""
-
-    for level in range(4):
-
-        if (
-            isinstance(data, dict)
-            and "dimension" in data
-            and "value" in data
-        ):
-            return data
-
-        if isinstance(data, dict):
-
-            next_data = next(
-                (
-                    data[key]
-                    for key in (
-                        "dataset",
-                        "data",
-                        "result",
-                        "results",
-                    )
-                    if key in data
-                    and isinstance(data[key], dict)
-                ),
-                None,
-            )
-
-            if next_data is not None:
-                data = next_data
-                continue
-
-        break
-
-    if isinstance(data, dict):
-
-        keys = list(data)[:18]
-
-        preview = json.dumps(
-            data,
-            ensure_ascii=False,
-            default=str,
-        )[:900]
-
-        raise ValueError(
-            f"JSON recibido sin dimension/value. "
-            f"Claves={keys}; "
-            f"fragmento={preview}"
-        )
-
-    raise ValueError(
-        f"Formato JSON no compatible: "
-        f"{type(data).__name__}; "
-        f"fragmento={str(data)[:500]}"
-    )
+def get_labels(items, code):
+    matches = [entry.get("label") for entry in items if entry.get("code") == code]
+    if len(matches) != 1 or not isinstance(matches[0], list):
+        raise ValueError(f"No se encontraron etiquetas para {code}")
+    return matches[0]
 
 
-def categories(d):
-
-    c = d["category"]
-    ix = c["index"]
-
-    if isinstance(ix, dict):
-        pairs = sorted(
-            ix.items(),
-            key=lambda kv: kv[1],
-        )
-    else:
-        pairs = list(enumerate(ix))
-
-    labels = c.get("label", {})
-
-    return [
-        (str(k), str(labels.get(k, k)))
-        for k, _ in pairs
-    ]
-
-
-def month_num(code, label):
-
-    for s in (label, code):
-
-        n = str(s).strip().lower()
-
-        if n in MONTHS:
-            return MONTHS[n]
-
-        if n.isdigit() and 1 <= int(n) <= 12:
-            return int(n)
-
-        m = re.match(r"^([01]?\d)[-/.]", n)
-
-        if m and 1 <= int(m.group(1)) <= 12:
-            return int(m.group(1))
-
-    raise ValueError(
-        f"Mes no reconocido: {code!r} / {label!r}"
-    )
-
-
-
-def extract(data):
-    """
-    Lee la respuesta real de INEGI PxWeb /datatable.
-
-    La matriz contiene:
-    - 3 filas: edificación, público y privado
-    - 252 columnas: enero 2006 a diciembre 2026
-    - Valores con formato '116.6||'
-
-    Conserva desde enero de 2016 los meses
-    con las tres observaciones disponibles.
-    """
-
-    if not isinstance(data, dict):
-        raise ValueError("INEGI no devolvió un objeto JSON")
-
-    required = {
-        "data", "heading", "stub",
-        "rowCount", "colCount"
-    }
-
-    if not required.issubset(data):
-        raise ValueError(
-            "Respuesta incompleta: "
-            + str(list(data.keys()))
-        )
-
-    headings = data["heading"]
-    stubs = data["stub"]
-    values = data["data"]
-
-    years = next(
-        x["label"] for x in headings
-        if x["code"] == "Año"
-    )
-
-    months = next(
-        x["label"] for x in headings
-        if x["code"] == "Mes"
-    )
-
-    variables = next(
-        x["label"] for x in stubs
-        if x["code"] == "Variable"
-    )
-
-    sector = next(
-        x["label"] for x in stubs
-        if x["code"] == "Sector SCIAN"
-    )
-
-    tipo = next(
-        x["label"] for x in stubs
-        if x["code"] == "Tipo de dato"
-    )
-
-    if sector != ["23 Construcción"]:
-        raise ValueError(
-            f"Sector SCIAN inesperado: {sector}"
-        )
-
-    if tipo != ["Dato"]:
-        raise ValueError(
-            f"Tipo de dato inesperado: {tipo}"
-        )
-
-    expected_variables = [
-        ("edificacion_indice", "edificación"),
-        ("publico_indice", "público"),
-        ("privado_indice", "privado"),
-    ]
-
-    if len(variables) != 3:
-        raise ValueError(
-            f"Se esperaban 3 variables: {variables}"
-        )
-
-    import unicodedata
-
-    def normalize(value):
-        value = unicodedata.normalize(
-            "NFD", str(value).lower()
-        )
-        return "".join(
-            c for c in value
-            if unicodedata.category(c) != "Mn"
-        )
-
-    for i, (_, expected) in enumerate(expected_variables):
-        if normalize(expected) not in normalize(variables[i]):
-            raise ValueError(
-                f"Variable inesperada en fila {i}: "
-                f"{variables[i]}"
-            )
-
-    if len(months) != 12:
-        raise ValueError("No se recibieron los 12 meses")
-
-    if len(set(map(str, years))) != len(years):
-        raise ValueError("Años duplicados")
-
-    for year in years:
-        if not str(year).isdigit() or len(str(year)) != 4:
-            raise ValueError(f"Año inválido: {year}")
-
-    ncols = len(years) * len(months)
-    nrows = len(variables)
-
-    if data["rowCount"] != nrows:
-        raise ValueError("Número de filas incorrecto")
-
-    if data["colCount"] != ncols:
-        raise ValueError("Número de columnas incorrecto")
-
-    if len(values) != nrows * ncols:
-        raise ValueError(
-            f"Matriz incompleta: {len(values)} valores; "
-            f"esperados {nrows * ncols}"
-        )
-
+def extract(response):
+    required = {"data", "heading", "stub", "rowCount", "colCount"}
+    if not required.issubset(response):
+        raise ValueError(f"Respuesta sin campos requeridos: {list(response)}")
+    years = get_labels(response["heading"], "Año")
+    months = get_labels(response["heading"], "Mes")
+    variables = get_labels(response["stub"], "Variable")
+    sector = get_labels(response["stub"], "Sector SCIAN")
+    data_type = get_labels(response["stub"], "Tipo de dato")
+    if [normalize(m) for m in months] != MONTH_NAMES:
+        raise ValueError(f"Orden mensual inesperado: {months}")
+    if sector != ["23 Construcción"] or data_type != ["Dato"]:
+        raise ValueError(f"Selección inesperada: sector={sector}, tipo={data_type}")
+    if len(variables) != len(COLUMNS):
+        raise ValueError(f"Se esperaban tres variables; recibido={variables}")
+    for label, (_, _, expected) in zip(variables, COLUMNS):
+        if expected not in normalize(label):
+            raise ValueError(f"Orden o nombre de variable inesperado: {label}")
+    if any(not re.fullmatch(r"\d{4}", str(y)) for y in years):
+        raise ValueError(f"Etiquetas de año inválidas: {years}")
+    if sorted(map(int, years)) != list(map(int, years)) or len(set(years)) != len(years):
+        raise ValueError("Años fuera de orden o duplicados")
+    cols = len(years) * 12
+    rows = len(COLUMNS)
+    matrix = response["data"]
+    if (response["rowCount"] != rows or response["colCount"] != cols
+            or len(matrix) != rows * cols):
+        raise ValueError("Dimensiones incorrectas de la matriz INEGI")
     result = {}
-
-    for row_idx, (column, _) in enumerate(
-        expected_variables
-    ):
-
-        for col_idx in range(ncols):
-
-            year_idx = col_idx // 12
-            month_idx = col_idx % 12
-
-            year = str(years[year_idx])
-            month = month_idx + 1
-
-            period = f"{year}-{month:02d}"
-
+    missing = {"", "-", ".", "..", "...", "N/D", "ND", "NA", "N/A", "N.D."}
+    for row_index, (_, column, _) in enumerate(COLUMNS):
+        for col_index in range(cols):
+            period = f"{years[col_index // 12]}-{col_index % 12 + 1:02d}"
             if period < START:
                 continue
-
-            position = row_idx * ncols + col_idx
-            raw = values[position]
-
-            if raw is None:
+            raw = matrix[row_index * cols + col_index]
+            number = "" if raw is None else str(raw).split("|", 1)[0].strip()
+            if number.upper() in missing:
                 continue
-
-            # INEGI devuelve por ejemplo "116.6||".
-            number = str(raw).split("|")[0].strip()
-
-# INEGI utiliza diferentes símbolos para
-# observaciones no disponibles o no publicadas.
-missing_values = {
-    "",
-    "-",
-    ".",
-    "..",
-    "...",
-    "N/D",
-    "ND",
-    "NA",
-    "N/A",
-    "N.D.",
-}
-
-if number.upper() in missing_values:
-    continue
-
-
             try:
                 value = float(number.replace(",", ""))
-
-            except ValueError:
-                raise ValueError(
-                    f"Valor no numérico en {period}, "
-                    f"{column}: {raw}"
-                )
-
-            import math
-
+            except ValueError as exc:
+                raise ValueError(f"Dato no numérico: {period} {column}: {raw!r}") from exc
             if not math.isfinite(value) or value < 0:
-                raise ValueError(
-                    f"Valor inválido en {period}: {value}"
-                )
-
+                raise ValueError(f"Dato inválido: {period} {column}: {value}")
             result.setdefault(period, {})[column] = value
-
-    expected_columns = set(CODES.values())
-
-    complete = {
-        period: row
-        for period, row in result.items()
-        if set(row) == expected_columns
-    }
-
-    if not complete:
-        raise ValueError("INEGI no devolvió meses completos")
-
-    periods = sorted(complete)
-
-    # Exigir histórico desde enero de 2016.
-    if periods[0] != "2016-01":
-        raise ValueError(
-            f"El histórico comienza en {periods[0]}, "
-            "no en 2016-01"
-        )
-
-    # Comprobar continuidad mensual.
-    for previous, following in zip(
-        periods, periods[1:]
-    ):
-
+    full = {period: values for period, values in result.items() if len(values) == rows}
+    periods = sorted(full)
+    if len(periods) < 96 or periods[0] != START:
+        raise ValueError(f"Cobertura insuficiente: primero={periods[0] if periods else 'ninguno'}; n={len(periods)}")
+    for previous, following in zip(periods, periods[1:]):
         year, month = map(int, previous.split("-"))
-
-        next_year = year + (month == 12)
-        next_month = month % 12 + 1
-
-        expected = f"{next_year}-{next_month:02d}"
-
+        expected = f"{year + (month == 12)}-{month % 12 + 1:02d}"
         if following != expected:
-            raise ValueError(
-                f"Faltan observaciones entre "
-                f"{previous} y {following}"
-            )
-
-    if len(periods) < 96:
-        raise ValueError(
-            "Cobertura insuficiente desde 2016"
-        )
-
-    print("=== ENEC: CONSULTA INTERPRETADA ===")
-    print("Variables oficiales:", variables)
-    print("Sector:", sector)
-    print("Primer periodo:", periods[0])
-    print("Último periodo:", periods[-1])
-    print("Meses completos:", len(periods))
-
-    print("Primer registro:", complete[periods[0]])
-    print("Último registro:", complete[periods[-1]])
-
-    print("=== VALIDACIÓN COMPLETADA ===")
-
-    return complete
+            raise ValueError(f"Mes faltante entre {previous} y {following}")
+    # No aceptar valores numéricos parciales posteriores al último mes completo.
+    if any(period > periods[-1] for period in result):
+        raise ValueError("INEGI devolvió datos parciales posteriores al último mes completo")
+    print(f"ENEC validado: {periods[0]} a {periods[-1]}; {len(periods)} meses", flush=True)
+    print(f"Último mes: {full[periods[-1]]}", flush=True)
+    return full
 
 
-
-def prior_rows():
-
-    if not DEST.exists():
-        return []
-
-    with DEST.open(
-        encoding="utf-8-sig",
-        newline="",
-    ) as f:
-        return list(csv.DictReader(f))
-
-
-def save(rows):
-
-    fields = [
-        "periodo",
-        "edificacion_indice",
-        "publico_indice",
-        "privado_indice",
-        "unidad",
-        "fuente",
-        "nota",
-    ]
-
-    tmp = DEST.with_suffix(".csv.tmp")
-
-    with tmp.open(
-        "w",
-        encoding="utf-8-sig",
-        newline="",
-    ) as f:
-
-        writer = csv.DictWriter(
-            f,
-            fieldnames=fields,
-        )
-
-        writer.writeheader()
-
-        for period, vals in sorted(
-            rows.items()
-        ):
-
-            writer.writerow({
-                "periodo": period,
-                **{
-                    k: f"{v:.6f}"
-                    for k, v in vals.items()
-                },
-                "unidad": "índice 2018=100",
-                "fuente": (
-                    "INEGI - ENEC; "
-                    "ENEC_NACIONAL_36"
-                ),
-                "nota": (
-                    "Índices del sector 23: "
-                    "edificación, sector público "
-                    "y sector privado"
-                ),
-            })
-
-    tmp.replace(DEST)
+def build_csv(rows):
+    from io import StringIO
+    stream = StringIO(newline="")
+    writer = csv.DictWriter(stream, fieldnames=FIELDS)
+    writer.writeheader()
+    for period, values in sorted(rows.items()):
+        writer.writerow({
+            "periodo": period,
+            **{name: f"{values[name]:.6f}" for _, name, _ in COLUMNS},
+            "unidad": "índice 2018=100",
+            "fuente": "INEGI - ENEC; ENEC_NACIONAL_36",
+            "nota": "Índices de edificación, sector público y privado; sector 23 Construcción",
+        })
+    return stream.getvalue()
 
 
-def create_excel(rows):
-    """Genera Excel a partir de los datos oficiales."""
-
+def make_excel(rows):
     try:
-        from artifact_tool import (
-            Workbook,
-            SpreadsheetFile,
-        )
-
-        book = Workbook.create()
-
-        ws = book.worksheets.add(
-            "ENEC_indices"
-        )
-
-        headers = [
-            "Periodo",
-            "Índice de edificación",
-            "Índice sector público",
-            "Índice sector privado",
-        ]
-
-        data = [headers] + [
-            [
-                period,
-                float(values[
-                    "edificacion_indice"
-                ]),
-                float(values[
-                    "publico_indice"
-                ]),
-                float(values[
-                    "privado_indice"
-                ]),
-            ]
-            for period, values in sorted(
-                rows.items()
-            )
-        ]
-
-        ws.get_range_by_indexes(
-            0, 0, len(data), 4
-        ).values = data
-
-        outfile = (
-            ROOT /
-            "enec_produccion_inegi.xlsx"
-        )
-
-        temporary = (
-            ROOT /
-            "enec_produccion_inegi.tmp.xlsx"
-        )
-
-        SpreadsheetFile.export_xlsx(
-            book
-        ).save(str(temporary))
-
-        temporary.replace(outfile)
-
-        return "generado"
-
+        from openpyxl import Workbook
     except ImportError:
-
-        print(
-            "Aviso: artifact_tool no disponible; "
-            "CSV y JSON oficiales conservados.",
-            file=sys.stderr,
-        )
-
-        return "biblioteca_no_disponible"
+        print("Aviso: openpyxl no instalado; el Excel no se generó", flush=True)
+        return False
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "ENEC_indices"
+    ws.append(["Periodo", "Índice de edificación", "Índice sector público", "Índice sector privado"])
+    for period, values in sorted(rows.items()):
+        ws.append([period, values["edificacion_indice"], values["publico_indice"], values["privado_indice"]])
+    temp = EXCEL.with_name(EXCEL.stem + ".tmp.xlsx")
+    wb.save(temp)
+    temp.replace(EXCEL)
+    return True
 
 
 def main():
-
-    report = {
-        "consultado_utc": datetime.now(
-            timezone.utc
-        ).isoformat(),
-        "fuente": URL,
-        "tabla": "ENEC/ENEC_NACIONAL_36",
-        "estado": "sin_validar",
-    }
-
+    report = {"consultado_utc": datetime.now(timezone.utc).isoformat(), "fuente": URL,
+              "tabla": "ENEC/ENEC_NACIONAL_36", "estado": "sin_validar"}
     try:
-
         response = fetch()
-
-        data = extract(response)
-
-        existing = prior_rows()
-
-        prev_latest = max(
-            (
-                r["periodo"]
-                for r in existing
-            ),
-            default="",
-        )
-
-        latest = max(data)
-
-        if latest < prev_latest:
-            raise ValueError(
-                f"La fuente termina en {latest}; "
-                f"el histórico actual llega "
-                f"a {prev_latest}"
-            )
-
+        rows = extract(response)
+        previous = {}
+        if DEST.exists():
+            with DEST.open(encoding="utf-8-sig", newline="") as handle:
+                previous = {r["periodo"]: r for r in csv.DictReader(handle)}
+        if previous and max(rows) < max(previous):
+            raise ValueError("La respuesta es anterior al último mes guardado")
         differences = {}
-
-        previous_by_period = {
-            r["periodo"]: r
-            for r in existing
-        }
-
-        for key in CODES.values():
-
-            discrepancies = []
-
-            for period, row in data.items():
-
-                old = previous_by_period.get(
-                    period
-                )
-
-                if not old or not old.get(key):
-                    continue
-
-                old_num = float(old[key])
-                new_num = row[key]
-
-                discrepancies.append(
-                    abs(old_num - new_num)
-                    / max(abs(old_num), 1.0)
-                )
-
-            if discrepancies:
-
-                differences[key] = round(
-                    statistics.median(
-                        discrepancies
-                    ),
-                    5,
-                )
-
-        report.update(
-            ultimo=latest,
-            primero=min(data),
-            meses=len(data),
-            error_relativo_mediano_vs_csv=differences,
-        )
-
-        changed = (
-            len(existing) != len(data)
-        ) or any(
-            old is None or any(
-                abs(
-                    float(
-                        old.get(k, "nan")
-                    ) - row[k]
-                ) > 1e-7
-                for k in CODES.values()
-            )
-            for period, row in data.items()
-            for old in [
-                previous_by_period.get(
-                    period
-                )
-            ]
-        )
-
-        # Sustituir histórico por la fuente oficial.
-        if changed:
-
-            save(data)
-
-            report["estado"] = (
-                "actualizado_fuente_oficial"
-            )
-
-        else:
-
-            report["estado"] = (
-                "sin_cambios"
-            )
-
-        # Guardar respuesta original.
-        raw_path = (
-            ROOT /
-            "enec_produccion_inegi_original.json"
-        )
-
-        raw_tmp = raw_path.with_suffix(
-            ".json.tmp"
-        )
-
-        raw_tmp.write_text(
-            json.dumps(
-                response,
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
-
-        raw_tmp.replace(raw_path)
-
-        excel_status = create_excel(data)
-
-        report["archivo_excel"] = (
-            excel_status
-        )
-
-        print(
-            f"ENEC {report['estado']}: "
-            f"{min(data)} a {latest}; "
-            f"diferencias={differences}"
-        )
-
+        for _, key, _ in COLUMNS:
+            deviations = []
+            for period, values in rows.items():
+                old = previous.get(period, {}).get(key, "")
+                if old:
+                    old_number = float(old)
+                    deviations.append(abs(old_number - values[key]) / max(abs(old_number), 1))
+            if deviations:
+                differences[key] = round(statistics.median(deviations), 6)
+        csv_text = build_csv(rows)
+        temp = DEST.with_name(DEST.name + ".tmp")
+        temp.write_text(csv_text, encoding="utf-8-sig")
+        temp.replace(DEST)
+        raw_temp = ORIGINAL.with_name(ORIGINAL.name + ".tmp")
+        raw_temp.write_text(json.dumps(response, ensure_ascii=False, indent=2), encoding="utf-8")
+        raw_temp.replace(ORIGINAL)
+        excel_ok = make_excel(rows)
+        report.update(estado="actualizado_fuente_oficial", primero=min(rows), ultimo=max(rows),
+                      meses=len(rows), excel_generado=excel_ok,
+                      diferencia_relativa_mediana_anterior=differences)
+        print(f"ENEC actualizado: {min(rows)} a {max(rows)}; Excel={excel_ok}", flush=True)
         return 0
-
     except Exception as exc:
-
-        report.update(
-            estado="conservado_sin_cambio",
-            error=str(exc),
-        )
-
-        print(
-            f"ENEC producción: {exc}",
-            file=sys.stderr,
-        )
-
+        report.update(estado="error", error=str(exc))
+        print(f"ENEC producción: {exc}", file=sys.stderr, flush=True)
         return 1
-
     finally:
-
-        STATUS.write_text(
-            json.dumps(
-                report,
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
+        STATUS.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":
