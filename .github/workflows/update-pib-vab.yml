@@ -17,12 +17,15 @@ jobs:
         run: python scripts/download_pib_vab_inegi.py --output PIBT_actualizado.xlsx
       - name: Procesar y validar PIB/VAB
         run: python scripts/update_pib_vab_trimestral.py --input PIBT_actualizado.xlsx
+      - name: Reconstruir datos locales para publicación
+        run: python scripts/rebuild_local_data.py
       - name: Publicar series validadas
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add pib_vab_construccion_trimestral.csv pib_vab_update_status.json
+          git add pib_vab_construccion_trimestral.csv pib_vab_update_status.json local-data.js
           if ! git diff --cached --quiet; then
             git commit -m 'Actualización trimestral PIB VAB INEGI'
             git push
           fi
+
