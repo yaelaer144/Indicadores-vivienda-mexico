@@ -1,7 +1,15 @@
 {
-  "consultado_utc": "2026-10-28T16:39:11.599497+00:00",
+  "consultado_utc": "2026-10-28T16:49:20.294030+00:00",
   "fuente": "https://www.inegi.org.mx/app/tabulados/pxwebapi/api/datatable",
   "tabla": "ENEC/ENEC_NACIONAL_36",
-  "estado": "conservado_sin_cambio",
-  "error": "Valor no numérico en 2026-09, edificacion_indice: -||"
+  "estado": "actualizado_fuente_oficial",
+  "primero": "2016-01",
+  "ultimo": "2026-08",
+  "meses": 128,
+  "excel_generado": false,
+  "diferencia_relativa_mediana_anterior": {
+    "edificacion_indice": 0.019851,
+    "publico_indice": 0.257032,
+    "privado_indice": 0.017459
+  }
 }
