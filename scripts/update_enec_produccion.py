@@ -275,213 +275,233 @@ def month_num(code, label):
     )
 
 
+
 def extract(data):
+    """
+    Lee la respuesta real de INEGI PxWeb /datatable.
 
-    data = unwrap_jsonstat(data)
+    La matriz contiene:
+    - 3 filas: edificación, público y privado
+    - 252 columnas: enero 2006 a diciembre 2026
+    - Valores con formato '116.6||'
 
-    if (
-        data.get("class") not in (None, "dataset")
-        or "dimension" not in data
-        or "value" not in data
-    ):
+    Conserva desde enero de 2016 los meses
+    con las tres observaciones disponibles.
+    """
+
+    if not isinstance(data, dict):
+        raise ValueError("INEGI no devolvió un objeto JSON")
+
+    required = {
+        "data", "heading", "stub",
+        "rowCount", "colCount"
+    }
+
+    if not required.issubset(data):
         raise ValueError(
-            "Respuesta distinta de un conjunto "
-            "de datos JSON-stat"
+            "Respuesta incompleta: "
+            + str(list(data.keys()))
         )
 
-    ids = data.get("id") or list(data["dimension"])
+    headings = data["heading"]
+    stubs = data["stub"]
+    values = data["data"]
 
-    dimcats = [
-        categories(data["dimension"][key])
-        for key in ids
+    years = next(
+        x["label"] for x in headings
+        if x["code"] == "Año"
+    )
+
+    months = next(
+        x["label"] for x in headings
+        if x["code"] == "Mes"
+    )
+
+    variables = next(
+        x["label"] for x in stubs
+        if x["code"] == "Variable"
+    )
+
+    sector = next(
+        x["label"] for x in stubs
+        if x["code"] == "Sector SCIAN"
+    )
+
+    tipo = next(
+        x["label"] for x in stubs
+        if x["code"] == "Tipo de dato"
+    )
+
+    if sector != ["23 Construcción"]:
+        raise ValueError(
+            f"Sector SCIAN inesperado: {sector}"
+        )
+
+    if tipo != ["Dato"]:
+        raise ValueError(
+            f"Tipo de dato inesperado: {tipo}"
+        )
+
+    expected_variables = [
+        ("edificacion_indice", "edificación"),
+        ("publico_indice", "público"),
+        ("privado_indice", "privado"),
     ]
 
-    sizes = [len(x) for x in dimcats]
-
-    expected_dims = [
-        "Variable",
-        "Tipo de dato",
-        "Sector SCIAN",
-        "Año",
-        "Mes",
-    ]
-
-    if len(ids) != 5 or not all(
-        any(
-            key.lower() == name.lower()
-            for key in ids
-        )
-        for name in expected_dims
-    ):
+    if len(variables) != 3:
         raise ValueError(
-            f"Dimensiones inesperadas: {ids}"
+            f"Se esperaban 3 variables: {variables}"
         )
 
-    if (
-        data.get("size")
-        and list(data["size"]) != sizes
-    ):
+    import unicodedata
+
+    def normalize(value):
+        value = unicodedata.normalize(
+            "NFD", str(value).lower()
+        )
+        return "".join(
+            c for c in value
+            if unicodedata.category(c) != "Mn"
+        )
+
+    for i, (_, expected) in enumerate(expected_variables):
+        if normalize(expected) not in normalize(variables[i]):
+            raise ValueError(
+                f"Variable inesperada en fila {i}: "
+                f"{variables[i]}"
+            )
+
+    if len(months) != 12:
+        raise ValueError("No se recibieron los 12 meses")
+
+    if len(set(map(str, years))) != len(years):
+        raise ValueError("Años duplicados")
+
+    for year in years:
+        if not str(year).isdigit() or len(str(year)) != 4:
+            raise ValueError(f"Año inválido: {year}")
+
+    ncols = len(years) * len(months)
+    nrows = len(variables)
+
+    if data["rowCount"] != nrows:
+        raise ValueError("Número de filas incorrecto")
+
+    if data["colCount"] != ncols:
+        raise ValueError("Número de columnas incorrecto")
+
+    if len(values) != nrows * ncols:
         raise ValueError(
-            "Dimensiones y tamaños inconsistentes"
+            f"Matriz incompleta: {len(values)} valores; "
+            f"esperados {nrows * ncols}"
         )
-
-    values = data["value"]
-
-    vi = next(
-        i for i, name in enumerate(ids)
-        if name.lower() == "variable"
-    )
-
-    yi = next(
-        i for i, name in enumerate(ids)
-        if name.lower() in ("año", "ano")
-    )
-
-    mi = next(
-        i for i, name in enumerate(ids)
-        if name.lower() == "mes"
-    )
-
-    ti = next(
-        i for i, name in enumerate(ids)
-        if name.lower() == "tipo de dato"
-    )
-
-    si = next(
-        i for i, name in enumerate(ids)
-        if name.lower() == "sector scian"
-    )
 
     result = {}
 
-    for flat_index, coords in enumerate(
-        itertools.product(
-            *(range(s) for s in sizes)
-        )
+    for row_idx, (column, _) in enumerate(
+        expected_variables
     ):
 
-        if isinstance(values, dict):
-            v = values.get(str(flat_index))
-        else:
-            v = values[flat_index]
+        for col_idx in range(ncols):
 
-        if v in (None, "", ".."):
-            continue
+            year_idx = col_idx // 12
+            month_idx = col_idx % 12
 
-        code, variable_label = dimcats[vi][
-            coords[vi]
-        ]
+            year = str(years[year_idx])
+            month = month_idx + 1
 
-        if code not in CODES:
-            continue
+            period = f"{year}-{month:02d}"
 
-        t_code, t_label = dimcats[ti][
-            coords[ti]
-        ]
+            if period < START:
+                continue
 
-        s_code, s_label = dimcats[si][
-            coords[si]
-        ]
+            position = row_idx * ncols + col_idx
+            raw = values[position]
 
-        if t_code != "0" or s_code != "0":
-            raise ValueError(
-                f"Selección inesperada: "
-                f"tipo {t_code}, sector {s_code}"
-            )
+            if raw is None:
+                continue
 
-        label_low = variable_label.lower()
+            # INEGI devuelve por ejemplo "116.6||".
+            number = str(raw).split("|")[0].strip()
 
-        hints = {
-            "29": "edific",
-            "28": "públic",
-            "21": "privad",
-        }
+            if number in ("", ".", "..", "...", "N/D"):
+                continue
 
-        if (
-            hints[code] not in label_low
-            and hints[code].replace(
-                "ú", "u"
-            ) not in label_low
-        ):
-            raise ValueError(
-                f"Código {code} no corresponde "
-                f"a la variable esperada: "
-                f"{variable_label}"
-            )
+            try:
+                value = float(number.replace(",", ""))
 
-        year_code, year_label = dimcats[yi][
-            coords[yi]
-        ]
+            except ValueError:
+                raise ValueError(
+                    f"Valor no numérico en {period}, "
+                    f"{column}: {raw}"
+                )
 
-        match = (
-            re.search(
-                r"(?:19|20)\d{2}",
-                year_label,
-            )
-            or re.search(
-                r"(?:19|20)\d{2}",
-                year_code,
-            )
-        )
+            import math
 
-        if not match:
-            raise ValueError(
-                f"Año no reconocido: "
-                f"{year_code} / {year_label}"
-            )
+            if not math.isfinite(value) or value < 0:
+                raise ValueError(
+                    f"Valor inválido en {period}: {value}"
+                )
 
-        month_code, month_label = dimcats[mi][
-            coords[mi]
-        ]
+            result.setdefault(period, {})[column] = value
 
-        period = (
-            f"{match.group(0)}-"
-            f"{month_num(month_code, month_label):02d}"
-        )
-
-        if period < START:
-            continue
-
-        result.setdefault(period, {})[
-            CODES[code]
-        ] = float(v)
+    expected_columns = set(CODES.values())
 
     complete = {
-        p: row
-        for p, row in result.items()
-        if set(row) == set(CODES.values())
+        period: row
+        for period, row in result.items()
+        if set(row) == expected_columns
     }
 
-    if len(complete) < 96:
+    if not complete:
+        raise ValueError("INEGI no devolvió meses completos")
+
+    periods = sorted(complete)
+
+    # Exigir histórico desde enero de 2016.
+    if periods[0] != "2016-01":
         raise ValueError(
-            f"Cobertura insuficiente: "
-            f"{len(complete)} meses completos "
-            f"desde {START}"
+            f"El histórico comienza en {periods[0]}, "
+            "no en 2016-01"
         )
 
-    ordered = sorted(complete)
-
-    for a, b in zip(
-        ordered,
-        ordered[1:],
+    # Comprobar continuidad mensual.
+    for previous, following in zip(
+        periods, periods[1:]
     ):
 
-        y, m = map(
-            int,
-            a.split("-"),
-        )
+        year, month = map(int, previous.split("-"))
 
-        expected = (
-            f"{y + (m == 12)}-"
-            f"{(m % 12) + 1:02d}"
-        )
+        next_year = year + (month == 12)
+        next_month = month % 12 + 1
 
-        if b != expected:
+        expected = f"{next_year}-{next_month:02d}"
+
+        if following != expected:
             raise ValueError(
-                f"Falta algún mes entre {a} y {b}"
+                f"Faltan observaciones entre "
+                f"{previous} y {following}"
             )
 
+    if len(periods) < 96:
+        raise ValueError(
+            "Cobertura insuficiente desde 2016"
+        )
+
+    print("=== ENEC: CONSULTA INTERPRETADA ===")
+    print("Variables oficiales:", variables)
+    print("Sector:", sector)
+    print("Primer periodo:", periods[0])
+    print("Último periodo:", periods[-1])
+    print("Meses completos:", len(periods))
+
+    print("Primer registro:", complete[periods[0]])
+    print("Último registro:", complete[periods[-1]])
+
+    print("=== VALIDACIÓN COMPLETADA ===")
+
     return complete
+
 
 
 def prior_rows():
