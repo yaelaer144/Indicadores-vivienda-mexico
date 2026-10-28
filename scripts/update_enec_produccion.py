@@ -424,8 +424,24 @@ def extract(data):
             # INEGI devuelve por ejemplo "116.6||".
             number = str(raw).split("|")[0].strip()
 
-            if number in ("", ".", "..", "...", "N/D"):
-                continue
+# INEGI utiliza diferentes símbolos para
+# observaciones no disponibles o no publicadas.
+missing_values = {
+    "",
+    "-",
+    ".",
+    "..",
+    "...",
+    "N/D",
+    "ND",
+    "NA",
+    "N/A",
+    "N.D.",
+}
+
+if number.upper() in missing_values:
+    continue
+
 
             try:
                 value = float(number.replace(",", ""))
