@@ -103,12 +103,13 @@ def payload():
     }
 
 
+
 def fetch():
-    """Consulta INEGI y muestra información de diagnóstico."""
+    """Consulta ENEC y examina la estructura real del tabulado."""
 
     body = json.dumps(
         payload(),
-        ensure_ascii=False,
+        ensure_ascii=False
     ).encode("utf-8")
 
     req = urllib.request.Request(
@@ -122,62 +123,55 @@ def fetch():
         },
     )
 
-    try:
-        with urllib.request.urlopen(
-            req,
-            timeout=90,
-        ) as response:
-
-            raw = response.read()
-
-            content_type = response.headers.get(
-                "Content-Type",
-                "",
-            )
-
-            print(
-                f"INEGI PxWeb: HTTP {response.status}; "
-                f"Content-Type={content_type}; "
-                f"bytes={len(raw)}",
-                flush=True,
-            )
-
-    except urllib.error.HTTPError as exc:
-
-        excerpt = exc.read(1000).decode(
-            "utf-8",
-            errors="replace",
+    with urllib.request.urlopen(req, timeout=90) as response:
+        raw = response.read()
+        print(
+            f"INEGI: HTTP {response.status}; "
+            f"bytes={len(raw)}",
+            flush=True
         )
 
-        raise ValueError(
-            f"INEGI PxWeb HTTP {exc.code}; "
-            f"respuesta inicial: {excerpt[:500]!r}"
-        ) from exc
+    result = json.loads(raw)
 
-    try:
-        parsed = json.loads(raw)
+    print("=== ESTRUCTURA DE RESPUESTA ENEC ===", flush=True)
+    print("Claves:", list(result.keys()), flush=True)
+    print("rowCount:", result.get("rowCount"), flush=True)
+    print("colCount:", result.get("colCount"), flush=True)
+    print("matrixSize:", result.get("matrixSize"), flush=True)
 
-    except (ValueError, UnicodeDecodeError) as exc:
-
-        snippet = raw[:700].decode(
-            "utf-8",
-            errors="replace",
+    for field in ("heading", "stub", "notes"):
+        print(
+            f"{field}:",
+            json.dumps(
+                result.get(field),
+                ensure_ascii=False,
+                default=str
+            )[:5000],
+            flush=True
         )
 
-        raise ValueError(
-            f"INEGI devolvió respuesta no JSON "
-            f"(Content-Type={content_type}): "
-            f"{snippet!r}"
-        ) from exc
+    values = result.get("data", [])
 
     print(
-        f"INEGI PxWeb: tipo={type(parsed).__name__}; "
-        f"claves="
-        f"{list(parsed)[:15] if isinstance(parsed, dict) else 'no es objeto'}",
-        flush=True,
+        "Cantidad de elementos data:",
+        len(values),
+        flush=True
     )
 
-    return parsed
+    print(
+        "Primeros 12 elementos data:",
+        json.dumps(
+            values[:12],
+            ensure_ascii=False,
+            default=str
+        ),
+        flush=True
+    )
+
+    print("=== FIN DEL DIAGNÓSTICO ===", flush=True)
+
+    return result
+
 
 
 def unwrap_jsonstat(data):
