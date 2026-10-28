@@ -17,7 +17,9 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.12'   
+      - name: Instalar dependencia para Excel
+        run: python -m pip install openpyxl
       - name: Consultar ENEC PxWeb y sustituir historico oficial
         id: consultar
         continue-on-error: true
