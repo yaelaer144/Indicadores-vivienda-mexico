@@ -32,7 +32,7 @@
 
   async function loadPeriodic(){
     const D=window.DASHBOARD_DATA;
-    const [enoeLocal,enoeAnnual,imss,inpp,shf,iccAnnual,iccMonthly,iccComponentsMonthly,pibConstruction,vabQuarterly,vabAnnualReal,igaeMonthly,ifbMonthly,imaiMonthly,enecEdifMM,inppConstructionLatest,vabComponents,priceHistory,iccQuarterly,inppQuarterly,inppConstructionMonthly,iccYoyMonthly,imssTotalMonthly,enecActivityHistorical,vabSubsectors,iccBase2025,inppBase2025,pvbRows,csvmRows,enecLaborRows,sbcRows,ruvFlowRows,tenureHistoryRows,tenure2024Rows,tenureAreaRows,conditionsHistoryRows,conditionsSummaryRows,bridgeRows,enecWorkerTypeRows,enecHousingRows,shfStateRows,sniivKpiRows,shfLevelsRows]=await Promise.all([
+    const [enoeLocal,enoeAnnual,imss,inpp,shf,iccAnnual,iccMonthly,iccComponentsMonthly,pibConstruction,pibVabOfficial,vabQuarterly,vabAnnualReal,igaeMonthly,ifbMonthly,imaiMonthly,enecEdifMM,inppConstructionLatest,vabComponents,priceHistory,iccQuarterly,inppQuarterly,inppConstructionMonthly,iccYoyMonthly,imssTotalMonthly,enecActivityHistorical,vabSubsectors,iccBase2025,inppBase2025,pvbRows,csvmRows,enecLaborRows,sbcRows,ruvFlowRows,tenureHistoryRows,tenure2024Rows,tenureAreaRows,conditionsHistoryRows,conditionsSummaryRows,bridgeRows,enecWorkerTypeRows,enecHousingRows,shfStateRows,sniivKpiRows,shfLevelsRows]=await Promise.all([
       csv('enoe_construccion_trimestral.csv'),
       csv('enoe_construccion_historico_anual.csv'),
       csv('imss_construccion_mensual.csv'),
@@ -42,6 +42,7 @@
       csv('icc_residencial_mensual.csv'),
       csv('icc_subindices_mensual.csv'),
       csv('pib_construccion_trimestral.csv'),
+      csv('pib_vab_construccion_trimestral.csv'),
       csv('vab_edificacion_trimestral.csv'),
       csv('vab_construccion_anual_real.csv'),
       csv('igae_construccion_mensual.csv'),
@@ -216,6 +217,27 @@
         specialized_yoy:num(pick(r,['trabajos_especializados_yoy']))
       })).filter(x=>x.period&&x.construction!=null).sort((a,b)=>sortQuarter(a.period,b.period));
     }
+    // PIB/VAB oficial trimestral: fuente única para KPI y ambas gráficas.
+    // Los niveles son millones de pesos anualizados a precios constantes de 2018.
+    if(pibVabOfficial.length){
+      const rows=pibVabOfficial.map(r=>({
+        period:normalizeQuarter(pick(r,['periodo'])),
+        construction:num(pick(r,['construccion'])),
+        edification:num(pick(r,['edificacion'])),
+        civil:num(pick(r,['ingenieria_civil'])),
+        specialized:num(pick(r,['trabajos_especializados'])),
+        construction_yoy:num(pick(r,['construccion_var_anual'])),
+        edification_yoy:num(pick(r,['edificacion_var_anual'])),
+        civil_yoy:num(pick(r,['ingenieria_civil_var_anual'])),
+        specialized_yoy:num(pick(r,['trabajos_especializados_var_anual']))
+      })).filter(x=>x.period&&[x.construction,x.edification,x.civil,x.specialized].every(Number.isFinite))
+        .sort((a,b)=>sortQuarter(a.period,b.period));
+      if(rows.length){
+        D.activity.vab_subsectors_quarterly=rows;
+        D.activity.pib_construction_quarterly=rows.map(r=>({period:r.period,value_mdp:r.construction,yoy:r.construction_yoy,share:null}));
+        D.activity.vab_quarterly=rows.map(r=>({period:r.period,value_mdp:r.construction,yoy:r.construction_yoy}));
+      }
+    }
     if(iccBase2025.length){
       D.prices.icc_monthly=iccBase2025.map(r=>({
         period:pick(r,['periodo']), general:num(pick(r,['general'])),
@@ -236,12 +258,12 @@
     }
 
 
-    if(pibConstruction.length){
+    if(!pibVabOfficial.length && pibConstruction.length){
       D.activity.pib_construction_quarterly=pibConstruction.map(r=>({period:normalizeQuarter(pick(r,['periodo','period'])),value_mdp:num(pick(r,['valor_mdp','value_mdp','nivel_mdp'])),yoy:num(pick(r,['variacion_anual_real','yoy','variacion_anual'])),share:num(pick(r,['participacion_pib','share']))})).filter(x=>x.period&&x.value_mdp!=null).sort((a,b)=>sortQuarter(a.period,b.period));
     }
-    if(vabQuarterly.length){
+    if(!pibVabOfficial.length && vabQuarterly.length){
       D.activity.vab_quarterly=vabQuarterly.map(r=>({period:normalizeQuarter(pick(r,['periodo','period'])),value_mdp:num(pick(r,['valor_mdp_2018_anualizado','valor_mdp','value_mdp','nivel_mdp'])),yoy:num(pick(r,['variacion_anual_real','yoy','variacion_anual'])),note:pick(r,['nota','note'])})).filter(x=>/^20\d{2}-T[1-4]$/.test(x.period||'')).sort((a,b)=>sortQuarter(a.period,b.period));
-    } else if(D.activity.pib_construction_quarterly?.length){
+    } else if(!pibVabOfficial.length && D.activity.pib_construction_quarterly?.length){
       D.activity.vab_quarterly=D.activity.pib_construction_quarterly.map(x=>({period:x.period,value_mdp:x.value_mdp,yoy:x.yoy}));
     }
     if(vabAnnualReal.length){
