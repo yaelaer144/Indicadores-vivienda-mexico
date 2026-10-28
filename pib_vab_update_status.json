@@ -2,9 +2,9 @@
   "fuente": "INEGI SCNM PIB Trimestral base 2018",
   "serie": "Original",
   "unidad": "millones de pesos anualizados a precios de 2018",
-  "origen": "PIBT_2.xlsx",
+  "origen": "PIBT_actualizado.xlsx",
   "primero": "2016-T1",
   "ultimo": "2026-T2",
   "trimestres": 42,
-  "procesado_utc": "2026-10-28T18:19:08.164855+00:00"
+  "procesado_utc": "2026-10-28T18:31:45.133662+00:00"
 }
