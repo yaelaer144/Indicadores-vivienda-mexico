@@ -1,6 +1,7 @@
 {
-  "consultado_utc": "2026-10-28T15:18:28.490821+00:00",
+  "consultado_utc": "2026-10-28T16:12:41.200458+00:00",
+  "fuente": "https://www.inegi.org.mx/app/tabulados/pxwebapi/api/datatable",
+  "tabla": "ENEC/ENEC_NACIONAL_36",
   "estado": "conservado_sin_cambio",
-  "series": {},
-  "error": "Falta INEGI_ID_ENEC_PROD_EDIFICACION: identificar y verificar esta serie antes de activarla"
+  "error": "Respuesta distinta de un conjunto de datos JSON-stat"
 }
