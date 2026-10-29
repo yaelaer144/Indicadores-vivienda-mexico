@@ -1,0 +1,11 @@
+{
+  "estado": "actualizado",
+  "fuente": "https://www.inegi.org.mx/app/tabulados/default.aspx?pr=13&vr=1&in=2&tp=20&wr=1&cno=1&idrt=3253&opc=p",
+  "serie": "original",
+  "base": 2018,
+  "inicio": "2016-01",
+  "ultimo": "2026-07",
+  "observaciones": 127,
+  "observaciones_descarga": 127,
+  "fecha_consulta_utc": "2026-10-29T17:21:20.315819+00:00"
+}
