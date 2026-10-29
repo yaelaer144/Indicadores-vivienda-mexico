@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """Descarga y valida IMFBCF residencial, serie original, base 2018=100."""
 
@@ -567,6 +566,7 @@ def integrar(descarga, previo):
     return out
 
 
+
 def main():
     ap = argparse.ArgumentParser()
 
@@ -592,33 +592,31 @@ def main():
             download_xlsx()
         )
 
+    descarga = parse(content)
+    old = ROOT / "ifb_residencial_mensual.csv"
+    previo = _historico_anterior(old)
 
-descarga = parse(content)
-old = ROOT / "ifb_residencial_mensual.csv"
-
-previo = _historico_anterior(old)
-
-print(
-    f"Descarga INEGI: {min(descarga)} a {max(descarga)}; "
-    f"{len(descarga)} meses"
-)
-
-if previo:
     print(
-        f"Histórico del dashboard: {min(previo)} a {max(previo)}; "
-        f"{len(previo)} meses"
+        f"Descarga INEGI: {min(descarga)} a {max(descarga)}; "
+        f"{len(descarga)} meses"
     )
 
-if previo and max(descarga) < max(previo):
-    print(
-        "SIN CAMBIOS: INEGI devolvió una serie más antigua "
-        "que el histórico del dashboard. "
-        "Se conservan los datos existentes."
-    )
-    return
+    if previo:
+        print(
+            f"Histórico del dashboard: "
+            f"{min(previo)} a {max(previo)}; "
+            f"{len(previo)} meses"
+        )
 
-rows = integrar(descarga, previo)
+    if previo and max(descarga) < max(previo):
+        print(
+            "SIN CAMBIOS: INEGI devolvió una serie "
+            "más antigua que el histórico del dashboard. "
+            "Se conservan los datos existentes."
+        )
+        return
 
+    rows = integrar(descarga, previo)
 
     tmp = old.with_suffix(".csv.tmp")
 
