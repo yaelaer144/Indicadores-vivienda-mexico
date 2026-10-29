@@ -1,0 +1,36 @@
+name: Actualizar IFB residencial base 2018
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '25 15 10,17,24 * *' # UTC; reintentos durante ventana de publicación
+permissions:
+  contents: write
+concurrency:
+  group: vivienda-actualizacion
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Descargar y validar IFB residencial
+        run: python scripts/update_ifb_residencial.py
+      - name: Reconstruir datos para gráficas
+        run: python scripts/rebuild_local_data.py
+      - name: Verificar JavaScript
+        run: node --check local-data.js
+      - name: Publicar cambios
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ifb_residencial_mensual.csv ifb_residencial_update_status.json local-data.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'Actualización automática IFB residencial'
+            git pull --rebase
+            git push
+          fi
