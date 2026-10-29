@@ -1,0 +1,64 @@
+
+name: Probar fuente alternativa IMSS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prueba:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Probar CSV de DataMX
+        run: |
+          python - <<'PY'
+          import urllib.request
+          import urllib.error
+
+          url = (
+              "https://datamx.io/dataset/"
+              "924b0ba9-38cf-46d9-a152-c31779a424f6/"
+              "resource/"
+              "382fbd94-4047-437d-9c59-54cd601dfa33/"
+              "download/data.csv"
+          )
+
+          req = urllib.request.Request(
+              url,
+              headers={
+                  "User-Agent": "Indicadores-Vivienda/1.0",
+                  "Range": "bytes=0-4095",
+              }
+          )
+
+          try:
+              with urllib.request.urlopen(
+                  req, timeout=45
+              ) as r:
+                  print("HTTP:", r.status)
+                  print("URL final:", r.url)
+                  print("Tipo:", r.headers.get("Content-Type"))
+                  print("Tamaño:", r.headers.get("Content-Length"))
+                  print("Rango:", r.headers.get("Content-Range"))
+
+                  if r.status == 206:
+                      muestra = r.read(4096)
+                      print(
+                          "Primeras filas:",
+                          muestra[:1500].decode(
+                              "utf-8", errors="replace"
+                          )
+                      )
+                      print("Acceso parcial confirmado")
+                  else:
+                      print(
+                          "El servidor no confirmó descarga "
+                          "parcial. No se descarga el archivo "
+                          "completo en esta prueba."
+                      )
+
+          except urllib.error.HTTPError as e:
+              print("HTTP:", e.code)
+          except Exception as e:
+              print("ERROR:", repr(e))
+          PY
