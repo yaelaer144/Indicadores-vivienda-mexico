@@ -1,5 +1,5 @@
 {
-  "fecha_ejecucion_utc": "2026-10-29T18:13:47.244168+00:00",
+  "fecha_ejecucion_utc": "2026-10-29T18:47:35.469071+00:00",
   "fuente": "IMSS Datos Abiertos",
   "inicio_historico": "2016-01",
   "meses_faltantes_al_inicio": 129,
@@ -13,7 +13,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2026-09-30.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2026-09-30.csv",
@@ -27,7 +27,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2026-08-31.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2026-08-31.csv",
@@ -41,7 +41,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2026-07-31.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2026-07-31.csv",
@@ -55,7 +55,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2016-01-31.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2016-01-31.csv",
@@ -69,7 +69,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2016-02-29.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2016-02-29.csv",
@@ -83,7 +83,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2016-03-31.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2016-03-31.csv",
@@ -97,7 +97,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2016-04-30.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2016-04-30.csv",
@@ -111,7 +111,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2016-05-31.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2016-05-31.csv",
@@ -125,7 +125,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2016-06-30.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2016-06-30.csv",
@@ -139,7 +139,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2016-07-31.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2016-07-31.csv",
@@ -153,7 +153,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2016-08-31.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2016-08-31.csv",
@@ -167,7 +167,7 @@
       "errores": [
         {
           "url": "https://datos.imss.gob.mx/sites/default/files/asg-2016-09-30.csv",
-          "error": "HTTP 503"
+          "error": "HTTP 403"
         },
         {
           "url": "https://www2.imss.gob.mx/sites/default/files/asg-2016-09-30.csv",
