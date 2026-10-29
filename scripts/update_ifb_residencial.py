@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Descarga y valida IMFBCF residencial, serie original, base 2018=100."""
-import argparse, csv, io, json, re, statistics, urllib.parse, urllib.request
+import argparse, csv, io, json, re, statistics, urllib.parse, urllib.request, zipfile, http.cookiejar, xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
@@ -19,29 +19,71 @@ class Form(HTMLParser):
  def handle_endtag(self,tag):
   if tag=='form':self.cur=None
 
-def download_csv():
- import http.cookiejar
+def download_xlsx():
+ """Descarga XLSX oficial con formulario ASP.NET y sesión nueva."""
  opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
- headers={'User-Agent':'Mozilla/5.0','Accept-Language':'es-MX,es;q=0.9'}
- with opener.open(urllib.request.Request(URL,headers=headers),timeout=90) as resp: html=resp.read(5_000_000).decode('utf-8','replace'); page=resp.url
+ headers={'User-Agent':'Mozilla/5.0 (compatible; Dashboard-IFB/1.0)', 'Accept-Language':'es-MX,es;q=0.9'}
+ with opener.open(urllib.request.Request(URL,headers=headers),timeout=90) as resp:
+  html=resp.read(6_000_000).decode('utf-8','replace');page=resp.url
  parser=Form();parser.feed(html)
  form=next((f for f in parser.forms if '__VIEWSTATE' in f['fields'] and '__EVENTVALIDATION' in f['fields']),None)
- if not form:raise ValueError('INEGI no entregó formulario ASP.NET válido')
- # Nombre del botón CSV sujeto a verificación en la ejecución real.
- for button in ('downloadjson_to_Csv','downloadjson_to_CSV'):
-  fields=dict(form['fields']);fields[button]='Descarga CSV'
-  body=urllib.parse.urlencode(fields).encode()
-  req=urllib.request.Request(urllib.parse.urljoin(page,form['action'] or page),data=body,headers={**headers,'Content-Type':'application/x-www-form-urlencoded','Referer':page},method='POST')
-  with opener.open(req,timeout=150) as resp:
-   typ=resp.headers.get('Content-Type','');raw=resp.read(15_000_000)
-  print(f'Intento {button}: Content-Type={typ}; bytes={len(raw)}')
-  if 'html' in typ.lower() or raw.lstrip().lower().startswith((b'<!doctype',b'<html')):continue
-  if raw.startswith(b'PK\x03\x04'):continue
-  for encoding in ('utf-8-sig','utf-8','latin1'):
-   try: txt=raw.decode(encoding);break
-   except UnicodeDecodeError:continue
-  if 'Concepto' in txt[:1500] and ('Residencial' in txt) and ('2018' in txt[:6000]):return txt
- raise ValueError('La descarga CSV no se pudo reproducir; comprobar nombre del botón en Payload de Chrome. Se conservan datos anteriores.')
+ if not form:raise ValueError('INEGI no entregó formulario ASP.NET completo; CSV anterior conservado')
+ fields=dict(form['fields']); fields['downloadjson_to_Xlsx']='Descarga Excel'
+ req=urllib.request.Request(urllib.parse.urljoin(page,form['action'] or page),data=urllib.parse.urlencode(fields).encode('utf-8'),headers={**headers,'Content-Type':'application/x-www-form-urlencoded','Referer':page,'Origin':'https://www.inegi.org.mx'},method='POST')
+ with opener.open(req,timeout=180) as resp:
+  typ=resp.headers.get('Content-Type','');raw=resp.read(30_000_001)
+ print(f'POST INEGI IFB: Content-Type={typ}; bytes={len(raw)}')
+ if len(raw)>30_000_000 or not zipfile.is_zipfile(io.BytesIO(raw)):
+  raise ValueError('INEGI no devolvió archivo XLSX válido; datos anteriores conservados')
+ with zipfile.ZipFile(io.BytesIO(raw)) as z:
+  if '[Content_Types].xml' not in z.namelist() or 'xl/workbook.xml' not in z.namelist():
+   raise ValueError('Respuesta ZIP no es un XLSX')
+ return raw
+
+def xlsx_to_csvtext(raw):
+ """Extrae el tabulado XLSX sin depender de formatos visuales ni archivos temporales."""
+ N={'m':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+ with zipfile.ZipFile(io.BytesIO(raw)) as z:
+  shared=[]
+  if 'xl/sharedStrings.xml' in z.namelist():
+   root=ET.fromstring(z.read('xl/sharedStrings.xml'))
+   for si in root.findall('m:si',N):shared.append(''.join((t.text or '') for t in si.findall('.//m:t',N)))
+  sheets=sorted((n for n in z.namelist() if re.fullmatch(r'xl/worksheets/sheet\d+\.xml',n)),key=lambda x:int(re.search(r'sheet(\d+)',x).group(1)))
+  for sheet in sheets:
+   root=ET.fromstring(z.read(sheet)); grid=[]
+   for row in root.findall('.//m:sheetData/m:row',N):
+    cells={}
+    for c in row.findall('m:c',N):
+     ref=c.attrib.get('r',''); col=re.match('[A-Z]+',ref)
+     if not col:continue
+     ci=0
+     for ch in col.group(0):ci=ci*26+ord(ch)-64
+     v=c.find('m:v',N);inline=c.find('m:is',N)
+     val=(v.text or '') if v is not None else ''.join(t.text or '' for t in inline.findall('.//m:t',N)) if inline is not None else ''
+     if c.attrib.get('t')=='s' and val:val=shared[int(val)]
+     if val!='':cells[ci-1]=val
+    if cells:grid.append(cells)
+   if not any(any('Índice de volumen físico' in v for v in r.values()) for r in grid):continue
+   top=next((i for i,r in enumerate(grid) if str(r.get(0,'')).strip()=='Concepto'),None)
+   if top is None:continue
+   hdr=grid[top]; nextrow=grid[top+1] if top+1<len(grid) else {}
+   col_labels={};last_year=None
+   for col in range(1,max(max(r.keys()) for r in grid)+1):
+    a=str(hdr.get(col,'')).strip();b=str(nextrow.get(col,'')).strip()
+    if re.fullmatch(r'20\d{2}|19\d{2}',a):last_year=int(a)
+    combined=re.match(r'^(19\d{2}|20\d{2})\s*\|\s*([A-Za-zÁÉÍÓÚáéíóúñÑ]+)',a)
+    if combined:col_labels[col]=f'{combined[1]} | {combined[2]}';continue
+    month=b if b.lower() in MONTHS else a if a.lower() in MONTHS else ''
+    if month and last_year:col_labels[col]=f'{last_year} | {month}'
+   if not col_labels:continue
+   out=io.StringIO();w=csv.writer(out)
+   cols=sorted(col_labels)
+   w.writerow(['Concepto']+[col_labels[c] for c in cols])
+   for row in grid[top+1:]:
+    w.writerow([row.get(0,'')]+[row.get(c,'') for c in cols])
+   result=out.getvalue()
+   if 'Residencial' in result:return result
+ raise ValueError('No se identificó tabla IFB residencial en el XLSX; datos anteriores conservados')
 
 def parse(csvtext):
  rows=list(csv.reader(io.StringIO(csvtext)))
@@ -83,7 +125,7 @@ def parse(csvtext):
 
 def main():
  ap=argparse.ArgumentParser();ap.add_argument('--input',type=Path,help='CSV oficial local, solo para pruebas');args=ap.parse_args()
- content=args.input.read_text(encoding='utf-8-sig') if args.input else download_csv()
+ content=(xlsx_to_csvtext(args.input.read_bytes()) if args.input.suffix.lower()=='.xlsx' else args.input.read_text(encoding='utf-8-sig')) if args.input else xlsx_to_csvtext(download_xlsx())
  rows=parse(content)
  old=ROOT/'ifb_residencial_mensual.csv'
  # Impedir retroceder la última fecha publicada.
