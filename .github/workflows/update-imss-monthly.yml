@@ -40,6 +40,62 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Diagnosticar fuentes IMSS
+        run: |
+          python - <<'PY'
+          import urllib.request
+          import urllib.error
+
+          fuentes = {
+              "IMSS oficial": (
+                  "https://datos.imss.gob.mx/group/asegurados"
+              ),
+              "IMSS archivo historico": (
+                  "https://datos.imss.gob.mx/sites/default/files/"
+                  "asg-2025-12-31.csv"
+              ),
+              "Datos procesados alternativos": (
+                  "https://datamx.io/dataset/"
+                  "924b0ba9-38cf-46d9-a152-c31779a424f6/"
+                  "resource/"
+                  "382fbd94-4047-437d-9c59-54cd601dfa33/"
+                  "download/data.csv"
+              )
+          }
+
+          for nombre, url in fuentes.items():
+              print("\nProbando:", nombre, flush=True)
+              try:
+                  req = urllib.request.Request(
+                      url,
+                      method="GET",
+                      headers={
+                          "User-Agent": "Mozilla/5.0",
+                          "Range": "bytes=0-2047"
+                      }
+                  )
+                  with urllib.request.urlopen(
+                      req, timeout=30
+                  ) as response:
+                      print("HTTP:", response.status)
+                      print("Tipo:", response.headers.get(
+                          "Content-Type"
+                      ))
+                      print("Longitud:", response.headers.get(
+                          "Content-Length"
+                      ))
+                      print("Rangos:", response.headers.get(
+                          "Content-Range"
+                      ))
+                      print("Muestra:", repr(
+                          response.read(200)
+                      ))
+              except urllib.error.HTTPError as e:
+                  print("HTTP:", e.code)
+              except Exception as e:
+                  print("Error:", str(e))
+          PY
+
       - name: Descargar y procesar IMSS
         env:
           IMSS_MAX_MONTHS_PER_RUN: ${{ inputs.max_months || '12' }}
