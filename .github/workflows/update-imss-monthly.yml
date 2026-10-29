@@ -1,20 +1,22 @@
+
 name: Actualizar IMSS trabajadores y salarios
 
 on:
   workflow_dispatch:
     inputs:
       max_months:
-        description: Meses por ejecución (máximo recomendado 12)
-        default: '12'
+        description: "Meses por ejecucion"
         required: false
+        default: "12"
         type: string
       backfill_offset:
-        description: Desplazamiento para intentar otro tramo de meses históricos
-        default: '0'
+        description: "Desplazamiento del historico"
         required: false
+        default: "0"
         type: string
+
   schedule:
-    - cron: '40 14 18 * *'
+    - cron: "40 14 18 * *"
 
 permissions:
   contents: write
@@ -24,38 +26,60 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  imss:
+  actualizar-imss:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - name: Descargar IMSS
-        id: imss
-        continue-on-error: true
+          python-version: "3.12"
+
+      - name: Descargar y procesar IMSS
         env:
           IMSS_MAX_MONTHS_PER_RUN: ${{ inputs.max_months || '12' }}
           IMSS_BACKFILL_OFFSET: ${{ inputs.backfill_offset || '0' }}
+          IMSS_URL_TEMPLATE: ${{ vars.IMSS_URL_TEMPLATE }}
         run: python scripts/update_imss_series.py
+
       - name: Reconstruir datos del dashboard
-        if: always()
         run: python scripts/rebuild_local_data.py
-      - name: Publicar resultados y diagnóstico
-        if: always()
+
+      - name: Publicar CSV y diagnostico
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add imss_construccion_mensual.csv imss_sbc_construccion_mensual.csv imss_total_mensual.csv imss_update_status.json local-data.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add \
+            imss_construccion_mensual.csv \
+            imss_sbc_construccion_mensual.csv \
+            imss_total_mensual.csv \
+            imss_update_status.json \
+            local-data.js
+
           if ! git diff --cached --quiet; then
-            git commit -m 'Actualización mensual IMSS trabajadores y salarios'
+            git commit -m "Actualizacion IMSS trabajadores y salarios"
             git pull --rebase
             git push
           fi
-      - name: Reportar falla de descarga
-        if: steps.imss.outcome == 'failure'
+
+      - name: Mostrar diagnostico
         run: |
-          echo '::error::IMSS sin descargas nuevas. Revisar imss_update_status.json; histórico conservado.'
-          exit 1
+          python - <<'PY'
+          import json
+
+          with open("imss_update_status.json", encoding="utf-8") as f:
+              status = json.load(f)
+
+          print("Estado:", status["estado"])
+          print("Meses intentados:", status["meses_intentados"])
+          print("Meses actualizados:", status["meses_actualizados"])
+
+          if status["estado"] == "sin_descargas_nuevas":
+              print("::warning::IMSS sin nuevas descargas. Revisar errores HTTP.")
+          PY
