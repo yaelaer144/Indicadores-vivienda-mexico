@@ -1,21 +1,23 @@
 
-name: Verificar estructura DataMX IMSS
+name: Validar historico IMSS DataMX
 
 on:
   workflow_dispatch:
 
 jobs:
-  verificar:
+  validar:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
-      - name: Inspeccionar CSV de DataMX
+      - name: Validar series historicas IMSS
         run: |
           python - <<'PY'
           import csv
           import io
+          import re
           import urllib.request
-          from collections import Counter
+          from collections import defaultdict
 
           url = (
               "https://datamx.io/dataset/"
@@ -25,6 +27,15 @@ jobs:
               "download/data.csv"
           )
 
+          totales = defaultdict(int)
+          construccion = defaultdict(int)
+          masa_construccion = defaultdict(float)
+          filas_periodo = defaultdict(int)
+          sectores = defaultdict(int)
+          sexos = set()
+          entidades = set()
+          filas = 0
+
           req = urllib.request.Request(
               url,
               headers={
@@ -33,16 +44,16 @@ jobs:
           )
 
           with urllib.request.urlopen(
-              req, timeout=120
+              req, timeout=180
           ) as response:
 
-              print("HTTP:", response.status)
+              print("HTTP:", response.status, flush=True)
               print(
                   "Tamaño:",
-                  response.headers.get("Content-Length")
+                  response.headers.get("Content-Length"),
+                  flush=True
               )
 
-              # Leer una muestra sin almacenar el CSV completo.
               text = io.TextIOWrapper(
                   response,
                   encoding="utf-8-sig",
@@ -51,49 +62,103 @@ jobs:
               )
 
               reader = csv.DictReader(text)
-              print("\nCOLUMNAS:")
-              print(reader.fieldnames)
 
-              if not reader.fieldnames:
-                  raise RuntimeError("CSV sin encabezados")
-
-              campos = {
-                  c.lower(): c
-                  for c in reader.fieldnames
+              requeridas = {
+                  "PERIODO", "CVE_ENT", "SEXO",
+                  "SECTOR", "TOTAL", "MASA_SALARIAL_TOTAL"
               }
 
-              periodo = campos.get("periodo")
-              sector = campos.get("sector_economico")
-              subsector = campos.get("subsector_economico")
+              faltantes = requeridas - set(
+                  reader.fieldnames or []
+              )
 
-              periodos = Counter()
-              sectores = Counter()
-              subsectores = Counter()
+              if faltantes:
+                  raise ValueError(
+                      "Columnas faltantes: " + str(faltantes)
+                  )
 
-              print("\nPRIMERAS 3 FILAS:")
+              for row in reader:
+                  periodo = row["PERIODO"].strip()
 
-              for i, row in enumerate(reader):
-                  if i < 3:
-                      print(row)
+                  if not re.fullmatch(
+                      r"\d{4}-\d{2}", periodo
+                  ):
+                      continue
 
-                  if periodo:
-                      periodos[row[periodo]] += 1
-                  if sector:
-                      sectores[row[sector]] += 1
-                  if subsector:
-                      subsectores[row[subsector]] += 1
+                  if periodo < "2016-01":
+                      continue
 
-                  if i >= 4999:
-                      break
+                  sector = row["SECTOR"].strip()
+                  sexo = row["SEXO"].strip()
+                  entidad = row["CVE_ENT"].strip()
 
-              print("\nPERIODOS EN LA MUESTRA:")
-              print(periodos.most_common(20))
+                  total = int(float(row["TOTAL"] or 0))
+                  masa = float(
+                      row["MASA_SALARIAL_TOTAL"] or 0
+                  )
 
-              print("\nSECTORES EN LA MUESTRA:")
-              print(sectores.most_common(30))
+                  filas += 1
+                  totales[periodo] += total
+                  filas_periodo[periodo] += 1
+                  sectores[sector] += total
+                  sexos.add(sexo)
+                  entidades.add(entidad)
 
-              print("\nSUBSECTORES EN LA MUESTRA:")
-              print(subsectores.most_common(20))
+                  if sector == "4":
+                      construccion[periodo] += total
+                      masa_construccion[periodo] += masa
 
-              print("\nInspeccion terminada.")
+                  if filas % 500000 == 0:
+                      print(
+                          "Filas procesadas:",
+                          filas,
+                          flush=True
+                      )
+
+          periodos = sorted(totales)
+
+          if not periodos:
+              raise RuntimeError(
+                  "No hay observaciones desde 2016"
+              )
+
+          print("\n====== COBERTURA ======")
+          print("Primer mes:", periodos[0])
+          print("Último mes:", periodos[-1])
+          print("Número de meses:", len(periodos))
+          print("Filas procesadas:", filas)
+          print("Códigos SEXO:", sorted(sexos))
+          print("Entidades:", sorted(entidades))
+
+          print("\n====== SECTORES ======")
+          for sector, valor in sorted(sectores.items()):
+              print(sector, valor)
+
+          print("\n====== ÚLTIMOS 12 MESES ======")
+          for p in periodos[-12:]:
+              print({
+                  "periodo": p,
+                  "puestos_nacional": totales[p],
+                  "puestos_construccion": construccion[p],
+                  "masa_salarial_construccion":
+                      round(masa_construccion[p], 2),
+                  "filas": filas_periodo[p]
+              })
+
+          print("\n====== VALIDACIONES ======")
+
+          anomalos = [
+              p for p in periodos
+              if construccion[p] <= 0
+              or totales[p] < construccion[p]
+          ]
+
+          print("Meses con anomalías:", anomalos)
+
+          if anomalos:
+              raise RuntimeError(
+                  "Se detectaron agregados inválidos"
+              )
+
+          print("Validación exploratoria terminada")
           PY
