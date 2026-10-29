@@ -1,74 +1,85 @@
 {
+  "fecha_ejecucion_utc": "2026-10-29T17:45:53.692984+00:00",
   "inicio_historico": "2016-01",
+  "fin_consultado": "2026-09",
   "updated_by": "GitHub Actions / IMSS Datos Abiertos",
   "regla_sector": "sector_economico_1 = 4",
   "regla_sbc": "sum(masa_sal_ta) / sum(ta_sal)",
-  "meses_faltantes_al_inicio": 130,
+  "meses_faltantes_al_inicio": 129,
   "meses_intentados": 12,
   "meses_actualizados": 0,
+  "estado": "sin_descargas_nuevas",
   "resultados": [
     {
-      "periodo": "2025-11",
+      "periodo": "2016-01",
       "status": "no_disponible",
       "errors": [
-        "https://datos.imss.gob.mx/sites/default/files/asg-2025-11-30.csv: HTTP 503",
-        "https://www2.imss.gob.mx/sites/default/files/asg-2025-11-30.csv: HTTP 503"
+        "https://datos.imss.gob.mx/sites/default/files/asg-2016-01-31.csv: HTTP 503",
+        "https://www2.imss.gob.mx/sites/default/files/asg-2016-01-31.csv: HTTP 503"
       ]
     },
     {
-      "periodo": "2025-12",
+      "periodo": "2016-02",
       "status": "no_disponible",
       "errors": [
-        "https://datos.imss.gob.mx/sites/default/files/asg-2025-12-31.csv: HTTP 503",
-        "https://www2.imss.gob.mx/sites/default/files/asg-2025-12-31.csv: HTTP 503"
+        "https://datos.imss.gob.mx/sites/default/files/asg-2016-02-29.csv: HTTP 503",
+        "https://www2.imss.gob.mx/sites/default/files/asg-2016-02-29.csv: HTTP 503"
       ]
     },
     {
-      "periodo": "2026-01",
+      "periodo": "2016-03",
       "status": "no_disponible",
       "errors": [
-        "https://datos.imss.gob.mx/sites/default/files/asg-2026-01-31.csv: HTTP 503",
-        "https://www2.imss.gob.mx/sites/default/files/asg-2026-01-31.csv: HTTP 503"
+        "https://datos.imss.gob.mx/sites/default/files/asg-2016-03-31.csv: HTTP 503",
+        "https://www2.imss.gob.mx/sites/default/files/asg-2016-03-31.csv: HTTP 503"
       ]
     },
     {
-      "periodo": "2026-02",
+      "periodo": "2016-04",
       "status": "no_disponible",
       "errors": [
-        "https://datos.imss.gob.mx/sites/default/files/asg-2026-02-28.csv: HTTP 503",
-        "https://www2.imss.gob.mx/sites/default/files/asg-2026-02-28.csv: HTTP 503"
+        "https://datos.imss.gob.mx/sites/default/files/asg-2016-04-30.csv: HTTP 503",
+        "https://www2.imss.gob.mx/sites/default/files/asg-2016-04-30.csv: HTTP 503"
       ]
     },
     {
-      "periodo": "2026-03",
+      "periodo": "2016-05",
       "status": "no_disponible",
       "errors": [
-        "https://datos.imss.gob.mx/sites/default/files/asg-2026-03-31.csv: HTTP 503",
-        "https://www2.imss.gob.mx/sites/default/files/asg-2026-03-31.csv: HTTP 503"
+        "https://datos.imss.gob.mx/sites/default/files/asg-2016-05-31.csv: HTTP 503",
+        "https://www2.imss.gob.mx/sites/default/files/asg-2016-05-31.csv: HTTP 503"
       ]
     },
     {
-      "periodo": "2026-04",
+      "periodo": "2016-06",
       "status": "no_disponible",
       "errors": [
-        "https://datos.imss.gob.mx/sites/default/files/asg-2026-04-30.csv: HTTP 503",
-        "https://www2.imss.gob.mx/sites/default/files/asg-2026-04-30.csv: HTTP 503"
+        "https://datos.imss.gob.mx/sites/default/files/asg-2016-06-30.csv: HTTP 503",
+        "https://www2.imss.gob.mx/sites/default/files/asg-2016-06-30.csv: HTTP 503"
       ]
     },
     {
-      "periodo": "2026-05",
+      "periodo": "2016-07",
       "status": "no_disponible",
       "errors": [
-        "https://datos.imss.gob.mx/sites/default/files/asg-2026-05-31.csv: HTTP 503",
-        "https://www2.imss.gob.mx/sites/default/files/asg-2026-05-31.csv: HTTP 503"
+        "https://datos.imss.gob.mx/sites/default/files/asg-2016-07-31.csv: HTTP 503",
+        "https://www2.imss.gob.mx/sites/default/files/asg-2016-07-31.csv: HTTP 503"
       ]
     },
     {
-      "periodo": "2026-06",
+      "periodo": "2016-08",
       "status": "no_disponible",
       "errors": [
-        "https://datos.imss.gob.mx/sites/default/files/asg-2026-06-30.csv: HTTP 503",
-        "https://www2.imss.gob.mx/sites/default/files/asg-2026-06-30.csv: HTTP 503"
+        "https://datos.imss.gob.mx/sites/default/files/asg-2016-08-31.csv: HTTP 503",
+        "https://www2.imss.gob.mx/sites/default/files/asg-2016-08-31.csv: HTTP 503"
+      ]
+    },
+    {
+      "periodo": "2016-09",
+      "status": "no_disponible",
+      "errors": [
+        "https://datos.imss.gob.mx/sites/default/files/asg-2016-09-30.csv: HTTP 503",
+        "https://www2.imss.gob.mx/sites/default/files/asg-2016-09-30.csv: HTTP 503"
       ]
     },
     {
@@ -93,14 +104,6 @@
       "errors": [
         "https://datos.imss.gob.mx/sites/default/files/asg-2026-09-30.csv: HTTP 503",
         "https://www2.imss.gob.mx/sites/default/files/asg-2026-09-30.csv: HTTP 503"
-      ]
-    },
-    {
-      "periodo": "2026-10",
-      "status": "no_disponible",
-      "errors": [
-        "https://datos.imss.gob.mx/sites/default/files/asg-2026-10-31.csv: HTTP 503",
-        "https://www2.imss.gob.mx/sites/default/files/asg-2026-10-31.csv: HTTP 503"
       ]
     }
   ]
