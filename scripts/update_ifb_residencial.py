@@ -246,28 +246,40 @@ def xlsx_to_csvtext(raw):
                 else {}
             )
 
+            
             col_labels = {}
             last_year = None
 
-            for col in range(
-                1,
-                max(max(r.keys()) for r in grid) + 1
-            ):
-                a = str(hdr.get(col, "")).strip()
-                b = str(nextrow.get(col, "")).strip()
+            def normalizar_etiqueta(value):
+                text = str(value or "").replace("\xa0", " ").strip()
+                text = re.sub(r"\s+", " ", text)
+                return re.sub(
+                    r"\s+[PR]$", "", text, flags=re.I
+                ).strip()
 
-                if re.fullmatch(r"20\d{2}|19\d{2}", a):
+            for col in range(
+                1, max(max(r.keys()) for r in grid) + 1
+            ):
+                a = normalizar_etiqueta(hdr.get(col, ""))
+                b = normalizar_etiqueta(nextrow.get(col, ""))
+
+                if re.fullmatch(r"(?:19|20)\d{2}", a):
                     last_year = int(a)
 
-                combined = re.match(
-                    r"^(19\d{2}|20\d{2})\s*\|\s*"
+                combined = re.fullmatch(
+                    r"((?:19|20)\d{2})\s*\|\s*"
                     r"([A-Za-zÁÉÍÓÚáéíóúñÑ]+)",
-                    a
+                    a,
+                    flags=re.I
                 )
 
-                if combined:
+                if (
+                    combined
+                    and combined.group(2).lower() in MONTHS
+                ):
                     col_labels[col] = (
-                        f"{combined[1]} | {combined[2]}"
+                        f"{combined.group(1)} | "
+                        f"{combined.group(2)}"
                     )
                     continue
 
@@ -281,6 +293,7 @@ def xlsx_to_csvtext(raw):
                     col_labels[col] = (
                         f"{last_year} | {month}"
                     )
+
 
             if not col_labels:
                 continue
