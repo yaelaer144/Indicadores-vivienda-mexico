@@ -227,7 +227,7 @@
       }
       const ifbm=D.activity.ifb_monthly||[];
       if(ifbm.length){
-        line('act-ifb',ifbm.map(x=>x.period),[ds('IFB · construcción residencial',trendCycle(ifbm.map(x=>x.index)),blue)],{beginAtZero:false,yTitle:'Índice 2019=100 · a.e.',decimals:1});
+        line('act-ifb',ifbm.map(x=>x.period),[ds('IFB · construcción residencial',ifbm.map(x=>x.index),blue)],{beginAtZero:false,yTitle:'Índice de volumen físico · 2018=100 · original',decimals:1});
       }
       const imaim=D.activity.imai_monthly||[];
       if(imaim.length){

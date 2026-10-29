@@ -1,0 +1,13 @@
+CORRECCIÓN IFB CONSTRUCCIÓN RESIDENCIAL · 28 octubre 2026
+
+Fuente: INEGI IMFBCF, serie original, índice de volumen físico base 2018=100.
+CSV aportado por el usuario: IMFBCF_2.csv.
+Cobertura: 2016-01 a 2026-07 (127 meses).
+Se excluyen columnas Anual y meses vacíos.
+Cálculos: variación mensual y anual sobre niveles oficiales no redondeados.
+El dashboard muestra niveles originales, no media móvil ni desestacionalización.
+
+Subir los 5 archivos del ZIP de corrección, sustituyendo los existentes en la raíz.
+Esto corrige la visualización actual; NO automatiza todavía la descarga periódica de IMFBCF.
+Para automatizar debe probarse un GET/POST al tabulado pr=13&idrt=3253, validar que la descarga contenga el mismo bloque y añadir un workflow GitHub Actions.
+No se debe confundir la serie original con la ajustada estacionalmente.
