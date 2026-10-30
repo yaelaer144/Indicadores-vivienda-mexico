@@ -1,408 +1,230 @@
-
 #!/usr/bin/env python3
-"""Actualizacion automatica de salarios IMSS mediante STPS Cognos."""
+"""Actualiza SBC construcción consultando STPS Cognos con Playwright.
 
+No requiere CSV manual. Preserva observaciones IMSS existentes; STPS
+completa los meses desde julio de 2016 y agrega periodos nuevos.
+El dashboard mensualiza el SBC diario multiplicando por 30.4.
+"""
 import csv
-import io
 import json
-import os
 import re
+import tempfile
 import urllib.parse
-import urllib.request
-import unicodedata
 from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
+from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
-
-DIARIO = ROOT / "imss_sbc_construccion_mensual.csv"
-MENSUAL = ROOT / "imss_salario_construccion_mensual.csv"
-STATUS = ROOT / "imss_salarios_stps_status.json"
-
-GATEWAY = (
-    "http://siel.stps.gob.mx:303/"
-    "ibmcognos/cgi-bin/cognos.cgi"
-)
-
-REPORT = (
+SALARIOS = ROOT / 'imss_sbc_construccion_mensual.csv'
+STATUS = ROOT / 'imss_salarios_stps_status.json'
+BASE = 'http://siel.stps.gob.mx:303/ibmcognos/cgi-bin/cognos.cgi'
+PATH = (
     "/content/folder[@name='Sitio STPS']"
     "/folder[@name='2. Salarios']"
     "/folder[@name='Salario asociado a trabajadores']"
     "/report[@name='Salario por Actividad Económica']"
 )
-
-MONTHS = {
-    "jan": 1, "ene": 1,
-    "feb": 2,
-    "mar": 3,
-    "apr": 4, "abr": 4,
-    "may": 5,
-    "jun": 6,
-    "jul": 7,
-    "aug": 8, "ago": 8,
-    "sep": 9,
-    "oct": 10,
-    "nov": 11,
-    "dec": 12, "dic": 12,
-}
-
-FACTOR = Decimal("30.4")
+MONTHS = {'jan':1, 'feb':2, 'mar':3, 'apr':4, 'may':5, 'jun':6,
+          'jul':7, 'aug':8, 'sep':9, 'oct':10, 'nov':11, 'dec':12,
+          'ene':1, 'abr':4, 'ago':8, 'dic':12}
+DATE_PATTERN = re.compile(
+    r'(?<!\d)(20\d{2})/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ene|Abr|Ago|Dic)(?!\w)',
+    re.IGNORECASE
+)
 
 
-def normalizar(s):
-    s = unicodedata.normalize("NFKD", str(s))
-    return "".join(
-        c for c in s if not unicodedata.combining(c)
-    ).lower().strip()
+def escape_cognos(s):
+    out = []
+    for b in s.encode('utf-8'):
+        if 48 <= b <= 57 or 65 <= b <= 90 or 97 <= b <= 122 or b in (45,46,95):
+            out.append(chr(b))
+        else:
+            out.append(f'*{b:02x}')
+    return ''.join(out)
 
 
-def fecha(s):
-    s = str(s).strip()
-    match = re.fullmatch(
-        r"(\d{4})[/.-]([A-Za-z]{3})", s
-    )
-    if match:
-        month = MONTHS.get(match.group(2).lower())
-        if month:
-            return f"{match.group(1)}-{month:02d}"
-
-    match = re.fullmatch(
-        r"(\d{4})-(0[1-9]|1[0-2])", s
-    )
-    return s if match else None
+def url_reporte():
+    params = {
+        'b_action': 'cognosViewer', 'ui.action': 'run',
+        'ui.object': 'XSSSTART' + escape_cognos(PATH) + 'XSSEND',
+        'run.outputFormat': 'HTML', 'run.prompt': 'true',
+    }
+    return BASE + '?' + urllib.parse.urlencode(params, safe='*')
 
 
 def decimal(s):
-    s = str(s).strip().replace(" ", "")
-    if not s or s in ("-", "N/A"):
-        return None
-    if "," in s and "." in s:
-        if s.rfind(",") > s.rfind("."):
-            s = s.replace(".", "").replace(",", ".")
+    s = str(s).strip().replace(' ', '').replace('\u00a0', '')
+    if ',' in s and '.' in s:
+        if s.rfind(',') > s.rfind('.'):
+            s = s.replace('.', '').replace(',', '.')
         else:
-            s = s.replace(",", "")
-    elif "," in s:
-        s = s.replace(",", ".")
+            s = s.replace(',', '')
+    elif ',' in s:
+        s = s.replace(',', '.')
     return Decimal(s)
 
 
-def construir_url():
-    params = {
-        "b_action": "cognosViewer",
-        "ui.action": "run",
-        "ui.object": REPORT,
-        "run.outputFormat": "CSV",
-        "run.prompt": "false",
-    }
-    return GATEWAY + "?" + urllib.parse.urlencode(params)
-
-
-
-def descargar():
-    """Consulta el reporte de salarios de STPS Cognos."""
-
-    url = (
-        os.getenv("STPS_COGNOS_URL")
-        or construir_url()
-    ).strip()
-
-    if not url.startswith(("http://", "https://")):
-        raise ValueError(
-            f"URL de STPS no valida: {url!r}"
-        )
-
-    print("Consultando STPS:", url, flush=True)
-
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "Mozilla/5.0",
-            "Accept": "text/csv,text/html,text/plain,*/*",
-        },
-    )
-
-    with urllib.request.urlopen(
-        req, timeout=180
-    ) as response:
-        raw = response.read(15 * 1024 * 1024)
-        ctype = response.headers.get(
-            "Content-Type", ""
-        )
-
-        print("HTTP:", response.status)
-        print("Tipo:", ctype)
-        print("Bytes:", len(raw))
-        print("URL final:", response.url)
-
-    if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
-        texto = raw.decode("utf-16")
-    else:
-        texto = raw.decode(
-            "utf-8-sig", errors="replace"
-        )
-
-    inicio = texto[:1000].lower()
-
-    if (
-        "<html" in inicio
-        or "<!doctype" in inicio
-        or "application/xhtml" in ctype.lower()
-        or "text/html" in ctype.lower()
-    ):
-        print(
-            "Cognos devolvio HTML en lugar de CSV."
-        )
-        print(
-            "Primeros 500 caracteres:",
-            texto[:500]
-        )
-
-        raise RuntimeError(
-            "El reporte requiere procesar HTML "
-            "o parametros adicionales de Cognos."
-        )
-
-    if not texto.strip():
-        raise RuntimeError(
-            "STPS devolvio una respuesta vacia."
-        )
-
-    if "\t" in texto[:3000]:
-        separador = "\t"
-    else:
-        primera = texto.splitlines()[0]
-        separador = (
-            ";" if primera.count(";") > primera.count(",")
-            else ","
-        )
-
-    filas = list(
-        csv.reader(
-            io.StringIO(texto),
-            delimiter=separador
-        )
-    )
-
-    if not filas:
-        raise RuntimeError(
-            "No se encontraron filas en la respuesta."
-        )
-
-    return filas
-
-
-def extraer_construccion(filas):
-    """Localiza la columna de construccion en el reporte."""
-    encabezado = None
-    posicion = None
-
-    for i, fila in enumerate(filas[:30]):
-        for j, campo in enumerate(fila):
-            nombre = normalizar(campo)
-            if (
-                "construccion" in nombre
-                and ("industria" in nombre or "div-" in nombre)
-            ):
-                encabezado = i
-                posicion = j
-                break
-        if posicion is not None:
-            break
-
-    if posicion is None:
-        raise ValueError(
-            "No se encontro columna de construccion. "
-            "Revisar formato del CSV Cognos."
-        )
-
-    datos = {}
-
-    for fila in filas[encabezado + 1:]:
-        if len(fila) <= posicion:
-            continue
-
-        periodo = None
-        for celda in fila[:3]:
-            periodo = fecha(celda)
-            if periodo:
-                break
-
-        if not periodo or periodo < "2016-01":
-            continue
-
-        valor = decimal(fila[posicion])
-
-        if valor is None:
-            continue
-
-        if not Decimal("50") < valor < Decimal("5000"):
-            raise ValueError(
-                f"Salario fuera de rango: {periodo}"
+def consultar_stps():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={'width':1440, 'height':1000})
+            response = page.goto(url_reporte(), wait_until='domcontentloaded', timeout=90000)
+            if not response or response.status != 200:
+                raise RuntimeError(f'Cognos HTTP {response.status if response else "sin respuesta"}')
+            if 'Error - IBM Cognos' in page.title():
+                raise RuntimeError('Cognos devolvió error, no el visor')
+            print('Cognos HTTP:', response.status, flush=True)
+            years = page.locator('input[type=checkbox]')
+            years.first.wait_for(timeout=30000)
+            cantidad_anios = datetime.now(timezone.utc).year - 2016 + 1
+            if years.count() < cantidad_anios:
+                raise RuntimeError(f'Faltan casillas para 2016–{datetime.now(timezone.utc).year}: {years.count()}')
+            # Primeras casillas: años descendentes, según el formulario verificado.
+            for idx in range(cantidad_anios):
+                item = page.locator('input[type=checkbox]').nth(idx)
+                if not item.is_checked():
+                    item.check(force=True, timeout=15000)
+            if page.locator('input[type=checkbox]:checked').count() < cantidad_anios:
+                raise RuntimeError('No quedaron seleccionados todos los años')
+            selector = page.locator('select').first
+            selector.wait_for(timeout=20000)
+            # La primera opción es Nacional en el formulario probado.
+            entidad = selector.locator('option').first.inner_text().strip()
+            if 'nacional' not in entidad.lower():
+                raise RuntimeError(f'La opción predeterminada no es Nacional: {entidad}')
+            print('Entidad:', entidad, flush=True)
+            boton = page.locator("button[onclick*='promptAction']")
+            if boton.count() == 0:
+                raise RuntimeError('No se encontró el botón Consultar')
+            boton.first.click(timeout=25000)
+            # Espera basada en que aparezcan meses del reporte; no solo etiquetas del formulario.
+            page.wait_for_timeout(8000)
+            filas = page.locator('tr').evaluate_all(
+                """els => els.map(tr => [...tr.children]
+                  .filter(e => e.tagName === 'TD' || e.tagName === 'TH')
+                  .map(e => e.innerText.trim()))"""
             )
+            print('Filas HTML:', len(filas), flush=True)
+        finally:
+            browser.close()
+    salarios = {}
+    auxiliares = 0
+    for fila in filas:
+        for i, celda in enumerate(fila):
+            m = DATE_PATTERN.search(celda)
+            if not m:
+                continue
+            periodo = f'{m.group(1)}-{MONTHS[m.group(2).lower()]:02d}'
+            # Estructura verificada: Mes, Total, Agricultura,
+            # Extractivas, Transformación, Construcción.
+            pos = i + 5
+            if pos >= len(fila):
+                auxiliares += 1
+                continue
+            try:
+                valor = decimal(fila[pos])
+            except (InvalidOperation, ValueError):
+                auxiliares += 1
+                continue
+            if not Decimal('50') < valor < Decimal('5000'):
+                auxiliares += 1
+                continue
+            if periodo in salarios and salarios[periodo] != valor:
+                raise RuntimeError(f'Salarios distintos para {periodo}')
+            salarios[periodo] = valor
+            break
+    print('Filas auxiliares ignoradas:', auxiliares, flush=True)
+    return salarios
 
-        if periodo in datos:
-            if datos[periodo] != valor:
-                raise ValueError(
-                    f"Periodo duplicado: {periodo}"
-                )
-        else:
-            datos[periodo] = valor
 
-    if not datos:
-        raise ValueError(
-            "Cognos no devolvio observaciones mensuales"
-        )
-
-    return datos
+def meses(inicio, fin):
+    y, m = map(int, inicio.split('-'))
+    yf, mf = map(int, fin.split('-'))
+    while (y, m) <= (yf, mf):
+        yield f'{y:04d}-{m:02d}'
+        m += 1
+        if m == 13:
+            y += 1
+            m = 1
 
 
-def leer_imss():
-    datos = {}
-
-    if not DIARIO.exists():
-        return datos
-
-    with DIARIO.open(
-        encoding="utf-8-sig", newline=""
-    ) as f:
-        for row in csv.DictReader(f):
-            p = row["periodo"]
-            v = row.get("sbc_diario_pesos", "")
-            if fecha(p) and v:
-                datos[p] = {
-                    "valor": decimal(v),
-                    "fuente": row.get("fuente") or "IMSS",
+def existentes():
+    out = {}
+    if SALARIOS.exists():
+        with SALARIOS.open(encoding='utf-8-sig', newline='') as f:
+            for fila in csv.DictReader(f):
+                periodo = fila['periodo'].strip()
+                if periodo in out:
+                    raise RuntimeError(f'Periodo duplicado en CSV existente: {periodo}')
+                out[periodo] = {
+                    'periodo': periodo,
+                    'sbc_diario_pesos': fila['sbc_diario_pesos'].strip(),
+                    'fuente': fila.get('fuente', '').strip() or 'IMSS'
                 }
-
-    return datos
-
-
-def escribir(ruta, columnas, filas):
-    temporal = ruta.with_suffix(".tmp")
-
-    with temporal.open(
-        "w", encoding="utf-8-sig", newline=""
-    ) as f:
-        w = csv.DictWriter(f, fieldnames=columnas)
-        w.writeheader()
-        w.writerows(filas)
-
-    temporal.replace(ruta)
+    return out
 
 
-def centavos(valor):
-    return str(valor.quantize(
-        Decimal("0.01"),
-        rounding=ROUND_HALF_UP,
-    ))
+def escribir_atomico(path, columns, rows):
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8-sig', newline='',
+                                     dir=ROOT, delete=False, suffix='.tmp') as f:
+        tmp = Path(f.name)
+        wr = csv.DictWriter(f, fieldnames=columns)
+        wr.writeheader()
+        wr.writerows(rows)
+    tmp.replace(path)
 
 
 def main():
-    nuevos = extraer_construccion(descargar())
-    existentes = leer_imss()
-
-    print("STPS:", min(nuevos), "a", max(nuevos))
-    print("Meses STPS:", len(nuevos))
-
-    # Control: contrastar un mes conocido.
-    referencia = nuevos.get("2026-06")
-    if referencia is not None:
-        if abs(referencia - Decimal("500.58")) > Decimal("1"):
-            raise ValueError(
-                "La serie no coincide con la referencia "
-                "de construccion de junio de 2026"
-            )
-
-    if "2026-06" not in nuevos:
-        raise ValueError(
-            "El reporte no contiene junio de 2026; "
-            "no se puede validar la consulta"
-        )
-
-    # Solo completar faltantes.
-    # Nunca reemplazar los meses existentes del IMSS.
-    combinados = dict(existentes)
-
-    for periodo, valor in nuevos.items():
-        if periodo not in combinados:
-            combinados[periodo] = {
-                "valor": valor,
-                "fuente": "STPS",
+    nuevo = consultar_stps()
+    if not nuevo:
+        raise RuntimeError('Cognos no entregó salarios')
+    print('STPS:', min(nuevo), 'a', max(nuevo), '| meses:', len(nuevo), flush=True)
+    if '2016-07' not in nuevo or '2026-09' not in nuevo:
+        raise RuntimeError('Falta algún mes ancla: 2016-07 o 2026-09')
+    for p in meses('2016-07', max(nuevo)):
+        if p not in nuevo:
+            raise RuntimeError('Falta un mes de STPS: ' + p)
+    if abs(nuevo['2026-06'] - Decimal('500.58')) > Decimal('1'):
+        raise RuntimeError('Referencia junio 2026 no coincide con construcción')
+    anterior = existentes()
+    if anterior and max(nuevo) < max(anterior):
+        raise RuntimeError('STPS no alcanza el último mes que ya tiene el dashboard')
+    combinado = dict(anterior)
+    insertados = []
+    for periodo, valor in sorted(nuevo.items()):
+        if periodo not in combinado:
+            insertados.append(periodo)
+            combinado[periodo] = {
+                'periodo': periodo,
+                'sbc_diario_pesos': f'{valor:.2f}',
+                'fuente': 'STPS Cognos (IMSS)'
             }
-
-    periodos = sorted(combinados)
-    if not periodos:
-        raise RuntimeError("Sin registros salariales")
-
-    if min(periodos) > "2016-07":
-        raise ValueError(
-            "La nueva consulta perdio cobertura historica"
-        )
-
-    diario = []
-    mensual = []
-
-    for p in periodos:
-        item = combinados[p]
-        v = item["valor"]
-
-        diario.append({
-            "periodo": p,
-            "sbc_diario_pesos": centavos(v),
-            "fuente": item["fuente"],
-        })
-
-        mensual.append({
-            "periodo": p,
-            "salario_mensual_pesos":
-                centavos(v * FACTOR),
-            "fuente": item["fuente"],
-            "factor": "30.4",
-        })
-
-    # Ambos archivos se generan automaticamente.
-    escribir(
-        DIARIO,
-        ["periodo", "sbc_diario_pesos", "fuente"],
-        diario,
-    )
-    escribir(
-        MENSUAL,
-        [
-            "periodo", "salario_mensual_pesos",
-            "fuente", "factor",
-        ],
-        mensual,
-    )
-
+    # Revisar compatibilidad con el dashboard antes de reemplazar el CSV.
+    for periodo, fila in combinado.items():
+        valor = decimal(fila['sbc_diario_pesos'])
+        if not Decimal('50') < valor < Decimal('5000'):
+            raise RuntimeError('Salario inválido en ' + periodo)
+    orden = sorted(combinado)
+    rows = [combinado[k] for k in orden]
+    escribir_atomico(SALARIOS, ['periodo', 'sbc_diario_pesos', 'fuente'], rows)
     status = {
-        "estado": "actualizado",
-        "fecha_utc": datetime.now(
-            timezone.utc
-        ).isoformat(),
-        "fuente": "STPS Cognos + IMSS",
-        "inicio": periodos[0],
-        "fin": periodos[-1],
-        "meses": len(periodos),
-        "meses_consultados_stps": len(nuevos),
-        "meses_nuevos": len(
-            set(combinados) - set(existentes)
+        'estado': 'actualizado',
+        'fecha_utc': datetime.now(timezone.utc).isoformat(),
+        'fuente_nueva': 'STPS Cognos, salario diario construcción',
+        'primer_mes': orden[0], 'ultimo_mes': orden[-1],
+        'meses_totales': len(orden), 'meses_stps_consultados': len(nuevo),
+        'meses_insertados': len(insertados),
+        'ultimo_salario_diario': str(decimal(rows[-1]['sbc_diario_pesos'])),
+        'ultimo_salario_mensual_30_4': str(
+            (decimal(rows[-1]['sbc_diario_pesos']) * Decimal('30.4')).quantize(Decimal('0.01'))
         ),
-        "factor_mensual": 30.4,
+        'nota': 'El dashboard mensualiza el salario diario multiplicando por 30.4.'
     }
-
-    STATUS.write_text(
-        json.dumps(
-            status, ensure_ascii=False, indent=2
-        ),
-        encoding="utf-8",
-    )
-
-    print(json.dumps(
-        status, ensure_ascii=False, indent=2
-    ))
+    STATUS.write_text(json.dumps(status, indent=2, ensure_ascii=False), encoding='utf-8')
+    print(json.dumps(status, indent=2, ensure_ascii=False), flush=True)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
