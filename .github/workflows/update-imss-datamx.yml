@@ -1,0 +1,72 @@
+
+name: Actualizar trabajadores IMSS DataMX
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "30 15 18 * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vivienda-actualizacion
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Actualizar trabajadores IMSS
+        run: python scripts/update_imss_datamx.py
+
+      - name: Regenerar datos del dashboard
+        run: python scripts/rebuild_local_data.py
+
+      - name: Publicar resultados
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add \
+            imss_construccion_mensual.csv \
+            imss_total_mensual.csv \
+            imss_datamx_update_status.json \
+            local-data.js
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Actualizar trabajadores IMSS desde DataMX"
+            git pull --rebase
+            git push
+          fi
+
+      - name: Mostrar resultado
+        run: |
+          python - <<'PY'
+          import json
+
+          with open(
+              "imss_datamx_update_status.json",
+              encoding="utf-8"
+          ) as f:
+              d = json.load(f)
+
+          print("Estado:", d["estado"])
+          print("Periodo:", d["inicio"], "a", d["fin"])
+          print("Meses:", d["meses"])
+          print("Nacional:", d["ultimo_nacional"])
+          print("Construccion:", d["ultimo_construccion"])
+          PY
