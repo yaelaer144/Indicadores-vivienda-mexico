@@ -1,0 +1,58 @@
+
+name: Actualizar salarios IMSS desde STPS
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "45 15 19 * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vivienda-actualizacion
+  cancel-in-progress: false
+
+jobs:
+  actualizar-salarios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Consultar STPS Cognos
+        env:
+          STPS_COGNOS_URL: ${{ vars.STPS_COGNOS_URL }}
+        run: |
+          python scripts/update_imss_salarios_stps.py
+
+      - name: Reconstruir dashboard
+        run: |
+          python scripts/rebuild_local_data.py
+
+      - name: Publicar actualizacion
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add \
+            imss_sbc_construccion_mensual.csv \
+            imss_salario_construccion_mensual.csv \
+            imss_salarios_stps_status.json \
+            local-data.js
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Actualizar salarios IMSS desde STPS"
+            git pull --rebase
+            git push
+          fi
