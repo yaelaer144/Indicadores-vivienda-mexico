@@ -1,11 +1,9 @@
-
 name: Actualizar salarios IMSS desde STPS
 
 on:
   workflow_dispatch:
-
   schedule:
-    - cron: "45 15 19 * *"
+    - cron: '45 15 19 * *'
 
 permissions:
   contents: write
@@ -15,10 +13,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  actualizar-salarios:
+  salarios:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
+    timeout-minutes: 25
     steps:
       - name: Descargar repositorio
         uses: actions/checkout@v4
@@ -26,36 +23,43 @@ jobs:
           fetch-depth: 0
 
       - name: Configurar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
-          
-      - name: Validar sintaxis Python
-        run: |
-          python -m py_compile scripts/update_imss_salarios_stps.py
-      - name: Consultar STPS Cognos
-        env:
-          STPS_COGNOS_URL: ${{ vars.STPS_COGNOS_URL }}
-        run: |
-          python scripts/update_imss_salarios_stps.py
+          python-version: '3.12'
 
-      - name: Reconstruir dashboard
+      - name: Instalar navegador
         run: |
-          python scripts/rebuild_local_data.py
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
 
-      - name: Publicar actualizacion
+      - name: Consultar STPS y actualizar salarios
+        run: python scripts/update_imss_salarios_stps.py
+
+      - name: Regenerar local-data.js
+        run: python scripts/rebuild_local_data.py
+
+      - name: Verificar cobertura y datos publicados
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python - <<'PY'
+          import csv, json
+          with open('imss_sbc_construccion_mensual.csv', encoding='utf-8-sig') as f:
+              registros = {r['periodo']: r for r in csv.DictReader(f)}
+          with open('imss_salarios_stps_status.json', encoding='utf-8') as f:
+              status = json.load(f)
+          assert '2016-07' in registros, 'Falta julio de 2016'
+          assert '2026-09' in registros, 'Falta septiembre de 2026'
+          assert registros[max(registros)]['sbc_diario_pesos'], 'Último SBC vacío'
+          assert 'imss_sbc_construccion_mensual.csv' in open('local-data.js', encoding='utf-8').read(), 'Serie no incorporada'
+          print('Publicable:', status)
+          PY
 
-          git add \
-            imss_sbc_construccion_mensual.csv \
-            imss_salario_construccion_mensual.csv \
-            imss_salarios_stps_status.json \
-            local-data.js
-
+      - name: Publicar datos y dashboard
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add imss_sbc_construccion_mensual.csv imss_salarios_stps_status.json local-data.js
           if ! git diff --cached --quiet; then
-            git commit -m "Actualizar salarios IMSS desde STPS"
+            git commit -m 'Actualizar salarios de construccion desde STPS Cognos'
             git pull --rebase
             git push
           fi
