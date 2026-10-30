@@ -99,9 +99,16 @@ def construir_url():
 
 
 def descargar():
-    url = os.getenv(
-        "STPS_COGNOS_URL", construir_url()
-    ).strip()
+    url = (
+    os.getenv("STPS_COGNOS_URL") or construir_url()
+).strip()
+
+if not url.startswith(("http://", "https://")):
+    raise ValueError(
+        f"URL de STPS no válida: {url!r}"
+    )
+
+print("Consultando STPS:", url, flush=True)
 
     req = urllib.request.Request(
         url,
