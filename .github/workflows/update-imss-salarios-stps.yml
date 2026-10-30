@@ -29,7 +29,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
+          
+      - name: Validar sintaxis Python
+        run: |
+          python -m py_compile scripts/update_imss_salarios_stps.py
       - name: Consultar STPS Cognos
         env:
           STPS_COGNOS_URL: ${{ vars.STPS_COGNOS_URL }}
