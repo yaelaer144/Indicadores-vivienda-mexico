@@ -1,0 +1,13 @@
+{
+  "estado": "actualizado",
+  "fecha_utc": "2026-10-30T19:10:07.759036+00:00",
+  "fuente_nueva": "STPS Cognos, salario diario construcción",
+  "primer_mes": "2016-07",
+  "ultimo_mes": "2026-09",
+  "meses_totales": 123,
+  "meses_stps_consultados": 123,
+  "meses_insertados": 21,
+  "ultimo_salario_diario": "505.99",
+  "ultimo_salario_mensual_30_4": "15382.10",
+  "nota": "El dashboard mensualiza el salario diario multiplicando por 30.4."
+}
