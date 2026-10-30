@@ -133,24 +133,59 @@ jobs:
               # Año 2026: primera casilla del
               # selector de años identificada
               # en el diagnostico previo.
+  
+              # Seleccionar todos los años disponibles:
+              # desde 2016 hasta 2026.
+
               casillas = page.locator(
                   "input[type=checkbox]"
               )
 
-              if casillas.count() >= 11:
+              print(
+                  "Años disponibles:",
+                  casillas.count(),
+                  flush=True
+              )
+
+              if casillas.count() != 11:
+                  raise RuntimeError(
+                      "Se esperaban 11 años (2016-2026). "
+                      "Revisar controles Cognos."
+                  )
+
+              for i in range(11):
+                  casilla = page.locator(
+                      "input[type=checkbox]"
+                  ).nth(i)
+
+                  if not casilla.is_checked():
+                      casilla.check(
+                          force=True,
+                          timeout=15000
+                      )
+
                   print(
-                      "Intentando seleccionar 2026"
+                      f"Año seleccionado: {2026-i}",
+                      flush=True
                   )
-                  casillas.first.check(
-                      force=True,
-                      timeout=15000
+
+              page.wait_for_timeout(5000)
+
+              seleccionados = page.locator(
+                  "input[type=checkbox]:checked"
+              ).count()
+
+              print(
+                  "Total de años seleccionados:",
+                  seleccionados,
+                  flush=True
+              )
+
+              if seleccionados != 11:
+                  raise RuntimeError(
+                      "No se seleccionaron todos los años"
                   )
-                  page.wait_for_timeout(4000)
-              else:
-                  print(
-                      "No se pudo identificar "
-                      "el selector de años."
-                  )
+
 
               page.screenshot(
                   path="diagnostico_stps/02_anio.png",
