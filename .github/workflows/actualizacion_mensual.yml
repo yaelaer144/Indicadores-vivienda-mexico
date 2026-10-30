@@ -35,7 +35,7 @@ jobs:
         env:
           INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
         run: |
-          python scripts/run_group.py monthly update_inegi_series.py:monthly update_remaining_inegi.py update_imss_series.py update_ruv_flow.py update_sniiv_kpis.py
+          python scripts/run_group.py monthly update_inegi_series.py:monthly update_remaining_inegi.py update_ruv_flow.py update_sniiv_kpis.py
 
       - name: Regenerar datos y auditar histórico
         if: always()
