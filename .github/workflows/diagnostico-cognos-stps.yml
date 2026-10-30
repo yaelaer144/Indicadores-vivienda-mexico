@@ -1,0 +1,171 @@
+
+name: Diagnosticar Cognos STPS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Probar formatos y errores Cognos
+        run: |
+          python - <<'PY'
+          import re
+          import urllib.parse
+          import urllib.request
+          import urllib.error
+          from html.parser import HTMLParser
+
+          BASE = (
+              "http://siel.stps.gob.mx:303/"
+              "ibmcognos/cgi-bin/cognos.cgi"
+          )
+
+          PATH = (
+              "/content/folder[@name='Sitio STPS']"
+              "/folder[@name='2. Salarios']"
+              "/folder[@name='Salario asociado a trabajadores']"
+              "/report[@name='Salario por Actividad Económica']"
+          )
+
+          class TextoHTML(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.partes = []
+
+              def handle_data(self, data):
+                  if data.strip():
+                      self.partes.append(data.strip())
+
+          def cognos_escape(s):
+              resultado = []
+              for b in s.encode("utf-8"):
+                  if (
+                      48 <= b <= 57 or
+                      65 <= b <= 90 or
+                      97 <= b <= 122 or
+                      b in (45, 46, 95)
+                  ):
+                      resultado.append(chr(b))
+                  else:
+                      resultado.append(f"*{b:02x}")
+              return "".join(resultado)
+
+          objeto = (
+              "XSSSTART" +
+              cognos_escape(PATH) +
+              "XSSEND"
+          )
+
+          pruebas = [
+              ("Original HTML", {
+                  "b_action": "cognosViewer",
+                  "ui.action": "run",
+                  "ui.object": objeto,
+                  "run.outputFormat": "",
+                  "run.prompt": "true",
+              }),
+              ("Original CSV sin prompts", {
+                  "b_action": "cognosViewer",
+                  "ui.action": "run",
+                  "ui.object": objeto,
+                  "run.outputFormat": "CSV",
+                  "run.prompt": "false",
+              }),
+              ("Ruta normal HTML", {
+                  "b_action": "cognosViewer",
+                  "ui.action": "run",
+                  "ui.object": PATH,
+                  "run.outputFormat": "HTML",
+                  "run.prompt": "true",
+              }),
+          ]
+
+          for nombre, params in pruebas:
+              print("\n" + "=" * 55)
+              print("PRUEBA:", nombre, flush=True)
+
+              query = urllib.parse.urlencode(
+                  params, safe="*"
+              )
+              url = BASE + "?" + query
+
+              try:
+                  req = urllib.request.Request(
+                      url,
+                      headers={
+                          "User-Agent": "Mozilla/5.0",
+                          "Accept": "text/html,text/csv,*/*",
+                      },
+                  )
+
+                  with urllib.request.urlopen(
+                      req, timeout=50
+                  ) as r:
+                      raw = r.read(200000)
+                      tipo = r.headers.get(
+                          "Content-Type", ""
+                      )
+                      print("HTTP:", r.status)
+                      print("Tipo:", tipo)
+                      print("Bytes leidos:", len(raw))
+
+                  html = raw.decode(
+                      "utf-8", errors="replace"
+                  )
+
+                  print(
+                      "Titulo:",
+                      re.findall(
+                          r"<title[^>]*>(.*?)</title>",
+                          html,
+                          re.I | re.S
+                      )[:2]
+                  )
+
+                  print(
+                      "Codigos error:",
+                      re.findall(
+                          r"<ERROR_[^>]+>.*?</ERROR_[^>]+>",
+                          html,
+                          re.I | re.S
+                      )[:8]
+                  )
+
+                  parser = TextoHTML()
+                  parser.feed(html)
+                  texto = " ".join(parser.partes)
+
+                  print("Mensaje:", texto[:1800])
+                  print(
+                      "Tiene tabla:",
+                      bool(re.search(
+                          r"<table\b", html, re.I
+                      ))
+                  )
+
+                  print(
+                      "Contiene construccion:",
+                      "construcci" in texto.lower()
+                  )
+
+              except urllib.error.HTTPError as e:
+                  print("HTTP ERROR:", e.code)
+                  print(
+                      "Detalle:",
+                      e.read(1200).decode(
+                          "utf-8", errors="replace"
+                      )
+                  )
+
+              except Exception as e:
+                  print("ERROR:", repr(e))
+
+          print("\nDiagnostico terminado")
+          PY
