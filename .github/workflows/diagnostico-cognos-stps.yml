@@ -1,5 +1,5 @@
 
-name: Probar consulta automatica STPS
+name: Extraer historico salarios STPS
 
 on:
   workflow_dispatch:
@@ -8,9 +8,9 @@ permissions:
   contents: read
 
 jobs:
-  consultar:
+  extraer:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Configurar Python
@@ -18,16 +18,19 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Instalar navegador
+      - name: Instalar Playwright
         run: |
           pip install playwright
           python -m playwright install --with-deps chromium
 
-      - name: Consultar STPS con navegador
+      - name: Extraer salarios Cognos
         run: |
           python - <<'PY'
+          import csv
           import re
           import urllib.parse
+          from collections import Counter
+          from decimal import Decimal, InvalidOperation
           from pathlib import Path
           from playwright.sync_api import sync_playwright
 
@@ -43,19 +46,49 @@ jobs:
               "/report[@name='Salario por Actividad Económica']"
           )
 
-          def escapar(s):
-              out = []
-              for b in s.encode("utf-8"):
+          MESES = {
+              "jan": 1, "ene": 1,
+              "feb": 2, "mar": 3,
+              "apr": 4, "abr": 4,
+              "may": 5, "jun": 6,
+              "jul": 7, "aug": 8,
+              "ago": 8, "sep": 9,
+              "oct": 10, "nov": 11,
+              "dec": 12, "dic": 12
+          }
+
+          salida = Path("diagnostico_stps")
+          salida.mkdir(exist_ok=True)
+
+          def escapar(texto):
+              resultado = []
+              for b in texto.encode("utf-8"):
                   if (
                       48 <= b <= 57
                       or 65 <= b <= 90
                       or 97 <= b <= 122
                       or b in (45, 46, 95)
                   ):
-                      out.append(chr(b))
+                      resultado.append(chr(b))
                   else:
-                      out.append(f"*{b:02x}")
-              return "".join(out)
+                      resultado.append(f"*{b:02x}")
+              return "".join(resultado)
+
+          def numero(valor):
+              valor = str(valor).strip()
+              valor = valor.replace(" ", "")
+              valor = valor.replace("\u00a0", "")
+
+              if "," in valor and "." in valor:
+                  if valor.rfind(",") > valor.rfind("."):
+                      valor = valor.replace(".", "")
+                      valor = valor.replace(",", ".")
+                  else:
+                      valor = valor.replace(",", "")
+              elif "," in valor:
+                  valor = valor.replace(",", ".")
+
+              return Decimal(valor)
 
           params = {
               "b_action": "cognosViewer",
@@ -66,31 +99,26 @@ jobs:
                   + "XSSEND"
               ),
               "run.outputFormat": "HTML",
-              "run.prompt": "true",
+              "run.prompt": "true"
           }
 
           url = BASE + "?" + urllib.parse.urlencode(
               params, safe="*"
           )
 
-          Path("diagnostico_stps").mkdir(
-              exist_ok=True
-          )
+          datos = {}
 
           with sync_playwright() as p:
-              browser = p.chromium.launch(
-                  headless=True
-              )
+              browser = p.chromium.launch(headless=True)
 
               page = browser.new_page(
                   viewport={
                       "width": 1440,
                       "height": 1000
-                  },
-                  accept_downloads=True
+                  }
               )
 
-              response = page.goto(
+              respuesta = page.goto(
                   url,
                   wait_until="domcontentloaded",
                   timeout=90000
@@ -98,59 +126,21 @@ jobs:
 
               print(
                   "HTTP:",
-                  response.status if response else None
+                  respuesta.status if respuesta else None,
+                  flush=True
               )
 
-              page.wait_for_timeout(5000)
-
-              print(
-                  "Titulo:",
-                  page.title()
-              )
-
-              print(
-                  "Checkboxes:",
-                  page.locator(
-                      "input[type=checkbox]"
-                  ).count()
-              )
-
-              print(
-                  "Selectores:",
-                  page.locator("select").count()
-              )
-
-              print(
-                  "Botones:",
-                  page.locator("button").count()
-              )
-
-              page.screenshot(
-                  path="diagnostico_stps/01_inicio.png",
-                  full_page=True
-              )
-
-              # Año 2026: primera casilla del
-              # selector de años identificada
-              # en el diagnostico previo.
-  
-              # Seleccionar todos los años disponibles:
-              # desde 2016 hasta 2026.
+              page.locator(
+                  "input[type=checkbox]"
+              ).first.wait_for(timeout=30000)
 
               casillas = page.locator(
                   "input[type=checkbox]"
               )
 
-              print(
-                  "Años disponibles:",
-                  casillas.count(),
-                  flush=True
-              )
-
               if casillas.count() != 11:
                   raise RuntimeError(
-                      "Se esperaban 11 años (2016-2026). "
-                      "Revisar controles Cognos."
+                      "El selector de años cambio"
                   )
 
               for i in range(11):
@@ -164,138 +154,216 @@ jobs:
                           timeout=15000
                       )
 
-                  print(
-                      f"Año seleccionado: {2026-i}",
-                      flush=True
-                  )
-
-              page.wait_for_timeout(5000)
-
               seleccionados = page.locator(
                   "input[type=checkbox]:checked"
               ).count()
 
               print(
-                  "Total de años seleccionados:",
+                  "Años seleccionados:",
                   seleccionados,
                   flush=True
               )
 
               if seleccionados != 11:
                   raise RuntimeError(
-                      "No se seleccionaron todos los años"
+                      "No se seleccionaron los 11 años"
                   )
 
+              selector = page.locator("select").first
+              selector.wait_for(timeout=15000)
 
-              page.screenshot(
-                  path="diagnostico_stps/02_anio.png",
-                  full_page=True
-              )
-
+              opciones = selector.locator("option")
               print(
-                  "Checkboxes despues del año:",
-                  page.locator(
-                      "input[type=checkbox]"
-                  ).count()
+                  "Entidad seleccionada:",
+                  opciones.first.inner_text()
               )
 
-              print(
-                  "Selectores despues del año:",
-                  page.locator("select").count()
-              )
-
-              print(
-                  "Opciones de selectores:",
-                  page.locator("select").evaluate_all(
-                      """els => els.map(e => ({
-                        id: e.id,
-                        options: [...e.options].map(
-                          o => o.textContent.trim()
-                        ).slice(0, 35)
-                      }))"""
-                  )
-              )
-
-              consultar = page.locator(
+              boton = page.locator(
                   "button[onclick*='promptAction']"
               )
 
-              if consultar.count():
-                  print(
-                      "Intentando ejecutar Consultar"
-                  )
-
-                  try:
-                      consultar.first.click(
-                          timeout=15000
-                      )
-                      page.wait_for_timeout(10000)
-                  except Exception as e:
-                      print(
-                          "No se pudo ejecutar:",
-                          str(e)[:500]
-                      )
-              else:
-                  print(
+              if boton.count() == 0:
+                  raise RuntimeError(
                       "No se encontro boton Consultar"
                   )
 
+              boton.first.click(timeout=20000)
+
+              page.wait_for_timeout(8000)
+
               page.screenshot(
-                  path="diagnostico_stps/03_resultado.png",
+                  path=str(salida / "resultado.png"),
                   full_page=True
               )
 
-              texto = page.locator("body").inner_text(
-                  timeout=20000
-              )
-
-              filas = page.locator("tr")
-
-              print("\n=== RESULTADO ===")
-              print("Titulo final:", page.title())
-              print("Filas HTML:", filas.count())
-              print(
-                  "Contiene construccion:",
-                  "construcci" in texto.lower()
-              )
-              print(
-                  "Contiene error:",
-                  bool(re.search(
-                      r"error|DPR-ERR|CAF-",
-                      texto,
-                      re.I
-                  ))
+              # Leer las celdas de las tablas reales.
+              filas = page.locator("tr").evaluate_all(
+                  """elements => elements.map(tr =>
+                    Array.from(tr.children)
+                      .filter(e =>
+                        e.tagName === 'TD' ||
+                        e.tagName === 'TH'
+                      )
+                      .map(e =>
+                        e.innerText.trim()
+                      )
+                  )"""
               )
 
               print(
-                  "Texto visible:",
-                  texto[:3000]
+                  "Filas HTML:",
+                  len(filas),
+                  flush=True
               )
 
-              print("\n=== PRIMERAS FILAS ===")
+              errores = []
 
-              for i in range(
-                  min(filas.count(), 12)
-              ):
-                  print(
-                      i,
-                      filas.nth(i).inner_text(
-                          timeout=10000
-                      )[:400]
-                  )
+              for fila in filas:
+                  for i, celda in enumerate(fila):
+                      match = re.search(
+                          r"(?<!\d)(20\d{2})/"
+                          r"(Jan|Feb|Mar|Apr|May|Jun|"
+                          r"Jul|Aug|Sep|Oct|Nov|Dec|"
+                          r"Ene|Abr|Ago|Dic)(?!\w)",
+                          celda,
+                          flags=re.I
+                      )
 
-              print(
-                  "\nArchivos de diagnostico generados"
-              )
+                      if not match:
+                          continue
+
+                      anio = int(match.group(1))
+                      mes = MESES[
+                          match.group(2).lower()
+                      ]
+
+                      periodo = f"{anio:04d}-{mes:02d}"
+
+                      # Orden del reporte:
+                      # Mes, Total, Agricultura,
+                      # Extractivas, Transformacion,
+                      # Construccion.
+                      posicion = i + 5
+
+                      if posicion >= len(fila):
+                          errores.append(
+                              (periodo, "Columnas insuficientes")
+                          )
+                          continue
+
+                      try:
+                          salario = numero(fila[posicion])
+                      except (InvalidOperation, ValueError):
+                          errores.append(
+                              (periodo, "Salario no numerico")
+                          )
+                          continue
+
+                      if not Decimal("50") < salario < Decimal("5000"):
+                          errores.append(
+                              (periodo, "Valor fuera de rango")
+                          )
+                          continue
+
+                      if periodo in datos:
+                          if datos[periodo] != salario:
+                              raise RuntimeError(
+                                  "Dos salarios distintos en "
+                                  + periodo
+                              )
+                      else:
+                          datos[periodo] = salario
+
+                      break
 
               browser.close()
+
+          periodos = sorted(datos)
+
+          print("\n=== COBERTURA ===")
+          print("Meses recuperados:", len(periodos))
+
+          if periodos:
+              print("Primer mes:", periodos[0])
+              print("Ultimo mes:", periodos[-1])
+
+          print("\n=== MESES POR AÑO ===")
+          conteo = Counter(
+              periodo[:4] for periodo in periodos
+          )
+
+          for anio in sorted(conteo):
+              print(anio, conteo[anio])
+
+          print("\n=== PRIMEROS 5 ===")
+          for periodo in periodos[:5]:
+              print(periodo, datos[periodo])
+
+          print("\n=== ULTIMOS 5 ===")
+          for periodo in periodos[-5:]:
+              print(periodo, datos[periodo])
+
+          print("\n=== ERRORES DE LECTURA ===")
+          print(errores[:20])
+
+          # Archivo de diagnostico: no se publica
+          # ni se modifica el dashboard.
+          with (
+              salida / "salarios_stps_extraidos.csv"
+          ).open(
+              "w",
+              encoding="utf-8-sig",
+              newline=""
+          ) as f:
+              escritor = csv.writer(f)
+              escritor.writerow([
+                  "periodo",
+                  "sbc_diario_pesos",
+                  "salario_mensual_pesos",
+                  "fuente"
+              ])
+
+              for periodo in periodos:
+                  diario = datos[periodo]
+                  mensual = diario * Decimal("30.4")
+
+                  escritor.writerow([
+                      periodo,
+                      str(diario),
+                      str(mensual.quantize(
+                          Decimal("0.01")
+                      )),
+                      "STPS Cognos"
+                  ])
+
+          if not periodos:
+              raise RuntimeError(
+                  "No se extrajeron salarios"
+              )
+
+          # Se espera julio de 2016 a
+          # septiembre de 2026: 123 meses.
+          if (
+              len(periodos) < 120
+              or "2016-07" not in datos
+              or "2026-09" not in datos
+          ):
+              raise RuntimeError(
+                  "Cobertura historica incompleta. "
+                  "Revisar resultados antes de publicar."
+              )
+
+          print(
+              "\nExtraccion historica validada",
+              flush=True
+          )
           PY
 
-      - name: Guardar capturas
+      - name: Guardar diagnostico
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: diagnostico-cognos-navegador
+          name: salarios-stps-historico
           path: diagnostico_stps/
           retention-days: 7
           if-no-files-found: warn
