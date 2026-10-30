@@ -98,23 +98,27 @@ def construir_url():
     return GATEWAY + "?" + urllib.parse.urlencode(params)
 
 
+
 def descargar():
+    """Consulta el reporte de salarios de STPS Cognos."""
+
     url = (
-    os.getenv("STPS_COGNOS_URL") or construir_url()
-).strip()
+        os.getenv("STPS_COGNOS_URL")
+        or construir_url()
+    ).strip()
 
-if not url.startswith(("http://", "https://")):
-    raise ValueError(
-        f"URL de STPS no válida: {url!r}"
-    )
+    if not url.startswith(("http://", "https://")):
+        raise ValueError(
+            f"URL de STPS no valida: {url!r}"
+        )
 
-print("Consultando STPS:", url, flush=True)
+    print("Consultando STPS:", url, flush=True)
 
     req = urllib.request.Request(
         url,
         headers={
             "User-Agent": "Mozilla/5.0",
-            "Accept": "text/csv,text/plain,*/*",
+            "Accept": "text/csv,text/html,text/plain,*/*",
         },
     )
 
@@ -125,14 +129,18 @@ print("Consultando STPS:", url, flush=True)
         ctype = response.headers.get(
             "Content-Type", ""
         )
+
         print("HTTP:", response.status)
         print("Tipo:", ctype)
         print("Bytes:", len(raw))
+        print("URL final:", response.url)
 
     if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
         texto = raw.decode("utf-16")
     else:
-        texto = raw.decode("utf-8-sig", errors="replace")
+        texto = raw.decode(
+            "utf-8-sig", errors="replace"
+        )
 
     inicio = texto[:1000].lower()
 
@@ -140,10 +148,24 @@ print("Consultando STPS:", url, flush=True)
         "<html" in inicio
         or "<!doctype" in inicio
         or "application/xhtml" in ctype.lower()
+        or "text/html" in ctype.lower()
     ):
+        print(
+            "Cognos devolvio HTML en lugar de CSV."
+        )
+        print(
+            "Primeros 500 caracteres:",
+            texto[:500]
+        )
+
         raise RuntimeError(
-            "Cognos devolvio HTML en lugar de datos. "
-            "Puede requerir parametros o sesion."
+            "El reporte requiere procesar HTML "
+            "o parametros adicionales de Cognos."
+        )
+
+    if not texto.strip():
+        raise RuntimeError(
+            "STPS devolvio una respuesta vacia."
         )
 
     if "\t" in texto[:3000]:
@@ -155,9 +177,19 @@ print("Consultando STPS:", url, flush=True)
             else ","
         )
 
-    return list(csv.reader(
-        io.StringIO(texto), delimiter=separador
-    ))
+    filas = list(
+        csv.reader(
+            io.StringIO(texto),
+            delimiter=separador
+        )
+    )
+
+    if not filas:
+        raise RuntimeError(
+            "No se encontraron filas en la respuesta."
+        )
+
+    return filas
 
 
 def extraer_construccion(filas):
