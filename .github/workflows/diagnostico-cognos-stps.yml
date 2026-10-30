@@ -1,5 +1,5 @@
 
-name: Inspeccionar tablas HTML STPS
+name: Probar consulta automatica STPS
 
 on:
   workflow_dispatch:
@@ -8,18 +8,28 @@ permissions:
   contents: read
 
 jobs:
-  inspeccionar:
+  consultar:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
-      - name: Inspeccionar reporte y formularios Cognos
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar navegador
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Consultar STPS con navegador
         run: |
           python - <<'PY'
           import re
           import urllib.parse
-          import urllib.request
-          from html.parser import HTMLParser
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright
 
           BASE = (
               "http://siel.stps.gob.mx:303/"
@@ -34,7 +44,7 @@ jobs:
           )
 
           def escapar(s):
-              resultado = []
+              out = []
               for b in s.encode("utf-8"):
                   if (
                       48 <= b <= 57
@@ -42,306 +52,215 @@ jobs:
                       or 97 <= b <= 122
                       or b in (45, 46, 95)
                   ):
-                      resultado.append(chr(b))
+                      out.append(chr(b))
                   else:
-                      resultado.append(f"*{b:02x}")
-              return "".join(resultado)
+                      out.append(f"*{b:02x}")
+              return "".join(out)
 
-          class Inspector(HTMLParser):
-              def __init__(self):
-                  super().__init__()
-                  self.tables = 0
-                  self.rows = []
-                  self.row = None
-                  self.cell = None
-                  self.formularios = []
-                  self.form_actual = None
-                  self.botones = []
-                  self.inputs = []
-                  self.selects = []
-
-              def handle_starttag(self, tag, attrs):
-                  a = dict(attrs)
-
-                  if tag == "table":
-                      self.tables += 1
-
-                  elif tag == "tr":
-                      self.row = []
-
-                  elif tag in ("td", "th"):
-                      self.cell = []
-
-                  elif tag == "form":
-                      self.form_actual = {
-                          "method": a.get("method"),
-                          "action": a.get("action"),
-                          "id": a.get("id"),
-                          "name": a.get("name"),
-                          "campos": [],
-                      }
-                      self.formularios.append(
-                          self.form_actual
-                      )
-
-                  elif tag == "input":
-                      campo = {
-                          "name": a.get("name", ""),
-                          "type": a.get("type", ""),
-                          "id": a.get("id", ""),
-                      }
-
-                      self.inputs.append(campo)
-
-                      if (
-                          self.form_actual is not None
-                          and campo["type"].lower()
-                          not in ("hidden", "password")
-                      ):
-                          self.form_actual[
-                              "campos"
-                          ].append(campo)
-
-                  elif tag == "select":
-                      self.selects.append({
-                          "name": a.get("name"),
-                          "id": a.get("id"),
-                      })
-
-                  elif tag == "button":
-                      self.botones.append({
-                          "id": a.get("id"),
-                          "name": a.get("name"),
-                          "type": a.get("type"),
-                          "onclick": a.get("onclick"),
-                      })
-
-              def handle_data(self, data):
-                  if self.cell is not None:
-                      self.cell.append(data)
-
-              def handle_endtag(self, tag):
-                  if tag in ("td", "th"):
-                      if self.cell is not None:
-                          valor = " ".join(
-                              "".join(self.cell).split()
-                          )
-
-                          if self.row is not None:
-                              self.row.append(valor)
-
-                      self.cell = None
-
-                  elif tag == "tr":
-                      if self.row:
-                          self.rows.append(self.row)
-                      self.row = None
-
-                  elif tag == "form":
-                      self.form_actual = None
-
-          objeto = (
-              "XSSSTART"
-              + escapar(PATH)
-              + "XSSEND"
-          )
-
-          parametros = {
+          params = {
               "b_action": "cognosViewer",
               "ui.action": "run",
-              "ui.object": objeto,
+              "ui.object": (
+                  "XSSSTART"
+                  + escapar(PATH)
+                  + "XSSEND"
+              ),
               "run.outputFormat": "HTML",
               "run.prompt": "true",
           }
 
           url = BASE + "?" + urllib.parse.urlencode(
-              parametros,
-              safe="*",
+              params, safe="*"
           )
 
-          print("Consultando reporte STPS...", flush=True)
-
-          solicitud = urllib.request.Request(
-              url,
-              headers={
-                  "User-Agent": "Mozilla/5.0",
-                  "Accept": "text/html",
-              },
+          Path("diagnostico_stps").mkdir(
+              exist_ok=True
           )
 
-          with urllib.request.urlopen(
-              solicitud,
-              timeout=120,
-          ) as respuesta:
-              contenido = respuesta.read(
-                  3 * 1024 * 1024
+          with sync_playwright() as p:
+              browser = p.chromium.launch(
+                  headless=True
+              )
+
+              page = browser.new_page(
+                  viewport={
+                      "width": 1440,
+                      "height": 1000
+                  },
+                  accept_downloads=True
+              )
+
+              response = page.goto(
+                  url,
+                  wait_until="domcontentloaded",
+                  timeout=90000
               )
 
               print(
                   "HTTP:",
-                  respuesta.status,
+                  response.status if response else None
               )
+
+              page.wait_for_timeout(5000)
+
               print(
-                  "Content-Type:",
-                  respuesta.headers.get(
-                      "Content-Type"
-                  ),
-              )
-              print(
-                  "Bytes:",
-                  len(contenido),
-              )
-
-          html = contenido.decode(
-              "utf-8",
-              errors="replace",
-          )
-
-          parser = Inspector()
-          parser.feed(html)
-
-          print("\n=== ESTRUCTURA ===")
-          print("Tablas:", parser.tables)
-          print(
-              "Filas detectadas:",
-              len(parser.rows),
-          )
-          print(
-              "Formularios:",
-              len(parser.formularios),
-          )
-
-          print("\n=== FORMULARIOS COGNOS ===")
-
-          for i, formulario in enumerate(
-              parser.formularios, 1
-          ):
-              print(f"\nFormulario {i}")
-              print(
-                  "Metodo:",
-                  formulario["method"],
-              )
-              print(
-                  "Action:",
-                  formulario["action"],
-              )
-              print(
-                  "ID:",
-                  formulario["id"],
-              )
-              print(
-                  "Nombre:",
-                  formulario["name"],
-              )
-
-              for campo in formulario[
-                  "campos"
-              ][:20]:
-                  print("Campo:", campo)
-
-          print("\n=== BOTONES ===")
-
-          for boton in parser.botones[:15]:
-              print(boton)
-
-          print("\n=== CONTROLES ===")
-
-          for termino in (
-              "formWarpRequest",
-              "PROMPTBUTTON_FINISH",
-              "finishN",
-              "p_Año",
-              "p_Mes",
-              "p_Nacional",
-          ):
-              print(
-                  termino,
-                  termino in html,
-              )
-
-          print("\n=== SELECTORES ===")
-
-          for selector in parser.selects[:20]:
-              print(selector)
-
-          print("\n=== PRIMERAS FILAS ===")
-
-          for fila in parser.rows[:8]:
-              texto = [
-                  celda[:150]
-                  for celda in fila[:10]
-              ]
-              print(texto)
-
-          print("\n=== CONSTRUCCION ===")
-
-          encontrados = 0
-
-          for fila in parser.rows:
-              texto = " ".join(fila).lower()
-
-              if "construcci" in texto:
-                  print([
-                      celda[:150]
-                      for celda in fila[:15]
-                  ])
-
-                  encontrados += 1
-
-                  if encontrados >= 5:
-                      break
-
-          print("\n=== FECHAS ===")
-
-          texto_filas = " ".join(
-              " ".join(fila)
-              for fila in parser.rows
-          )
-
-          fechas = re.findall(
-              r"\b20\d{2}[-/](?:0?[1-9]|1[0-2])\b",
-              texto_filas,
-          )
-
-          print(
-              "Fechas encontradas:",
-              fechas[:20],
-          )
-
-          print("\n=== PARAMETROS COGNOS ===")
-
-          for nombre in (
-              "Año",
-              "Mes",
-              "Nacional",
-          ):
-              patron = (
-                  r'"@parameter"\s*:\s*"'
-                  + re.escape(nombre)
-                  + r'"'
+                  "Titulo:",
+                  page.title()
               )
 
               print(
-                  nombre,
-                  bool(re.search(patron, html)),
+                  "Checkboxes:",
+                  page.locator(
+                      "input[type=checkbox]"
+                  ).count()
               )
 
-          print("\n=== DIAGNOSTICO FINAL ===")
-
-          if fechas and encontrados:
               print(
-                  "Existen indicios de datos "
-                  "mensuales en el HTML."
-              )
-          else:
-              print(
-                  "El reporte contiene controles "
-                  "de parametros. Es necesario "
-                  "ejecutar la seleccion para "
-                  "obtener los salarios."
+                  "Selectores:",
+                  page.locator("select").count()
               )
 
-          print(
-              "\nInspeccion finalizada correctamente"
-          )
+              print(
+                  "Botones:",
+                  page.locator("button").count()
+              )
+
+              page.screenshot(
+                  path="diagnostico_stps/01_inicio.png",
+                  full_page=True
+              )
+
+              # Año 2026: primera casilla del
+              # selector de años identificada
+              # en el diagnostico previo.
+              casillas = page.locator(
+                  "input[type=checkbox]"
+              )
+
+              if casillas.count() >= 11:
+                  print(
+                      "Intentando seleccionar 2026"
+                  )
+                  casillas.first.check(
+                      force=True,
+                      timeout=15000
+                  )
+                  page.wait_for_timeout(4000)
+              else:
+                  print(
+                      "No se pudo identificar "
+                      "el selector de años."
+                  )
+
+              page.screenshot(
+                  path="diagnostico_stps/02_anio.png",
+                  full_page=True
+              )
+
+              print(
+                  "Checkboxes despues del año:",
+                  page.locator(
+                      "input[type=checkbox]"
+                  ).count()
+              )
+
+              print(
+                  "Selectores despues del año:",
+                  page.locator("select").count()
+              )
+
+              print(
+                  "Opciones de selectores:",
+                  page.locator("select").evaluate_all(
+                      """els => els.map(e => ({
+                        id: e.id,
+                        options: [...e.options].map(
+                          o => o.textContent.trim()
+                        ).slice(0, 35)
+                      }))"""
+                  )
+              )
+
+              consultar = page.locator(
+                  "button[onclick*='promptAction']"
+              )
+
+              if consultar.count():
+                  print(
+                      "Intentando ejecutar Consultar"
+                  )
+
+                  try:
+                      consultar.first.click(
+                          timeout=15000
+                      )
+                      page.wait_for_timeout(10000)
+                  except Exception as e:
+                      print(
+                          "No se pudo ejecutar:",
+                          str(e)[:500]
+                      )
+              else:
+                  print(
+                      "No se encontro boton Consultar"
+                  )
+
+              page.screenshot(
+                  path="diagnostico_stps/03_resultado.png",
+                  full_page=True
+              )
+
+              texto = page.locator("body").inner_text(
+                  timeout=20000
+              )
+
+              filas = page.locator("tr")
+
+              print("\n=== RESULTADO ===")
+              print("Titulo final:", page.title())
+              print("Filas HTML:", filas.count())
+              print(
+                  "Contiene construccion:",
+                  "construcci" in texto.lower()
+              )
+              print(
+                  "Contiene error:",
+                  bool(re.search(
+                      r"error|DPR-ERR|CAF-",
+                      texto,
+                      re.I
+                  ))
+              )
+
+              print(
+                  "Texto visible:",
+                  texto[:3000]
+              )
+
+              print("\n=== PRIMERAS FILAS ===")
+
+              for i in range(
+                  min(filas.count(), 12)
+              ):
+                  print(
+                      i,
+                      filas.nth(i).inner_text(
+                          timeout=10000
+                      )[:400]
+                  )
+
+              print(
+                  "\nArchivos de diagnostico generados"
+              )
+
+              browser.close()
           PY
+
+      - name: Guardar capturas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostico-cognos-navegador
+          path: diagnostico_stps/
+          retention-days: 7
+          if-no-files-found: warn
