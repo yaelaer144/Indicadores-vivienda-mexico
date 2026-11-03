@@ -1,7 +1,7 @@
 {
-  "checked_at_utc": "2026-11-03T16:24:17.944754+00:00",
+  "checked_at_utc": "2026-11-03T16:29:35.073877+00:00",
   "source": "INEGI ENOE InfoLaboral (consulta automática HTML)",
   "units": "miles de personas",
   "updated": false,
-  "error": "No se pudo marcar 2016. Diagnóstico: {\"updated\": [], \"yearsFound\": [], \"checkboxCount\": 52}"
+  "error": "Locator.click: Timeout 90000ms exceeded.\nCall log:\n  - waiting for locator(\"#btngind_con\")\n    - locator resolved to <input type=\"submit\" id=\"btngind_con\" value=\"Consultar\" name=\"btngind_con\" disabled=\"disabled\" class=\"aspNetDisabled Boton\" title=\"Oprima para generar su consulta\"/>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n      - waiting 100ms\n    174 × waiting for element to be visible, enabled and stable\n        - element is not enabled\n      - retrying click action\n        - waiting 500ms\n"
 }
