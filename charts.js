@@ -197,7 +197,7 @@
       if(sumEnoe.length){
         const a=ds('Ocupación en construcción',sumEnoe.map(x=>Number.isFinite(x.total)?x.total/1000:null),brand); a.yAxisID='y'; a.unit=' millones'; a.decimals=2;
         const b=ds('Población ocupada total',sumEnoe.map(x=>Number.isFinite(x.occupied_total)?x.occupied_total/1000:null),blue); b.yAxisID='y1'; b.unit=' millones'; b.decimals=1;
-        dualAxisLine('sum-employment',sumEnoe.map(x=>x.period),[a,b],{leftMin:4.5,leftMax:5.0,rightMin:58,rightMax:61,leftTitle:'Construcción · millones',rightTitle:'Total nacional · millones'});
+        dualAxisLine('sum-employment',sumEnoe.map(x=>x.period),[a,b],{leftTitle:'Construcción · millones',rightTitle:'Total nacional · millones'});
       }
 
       // PIB de vivienda: las visualizaciones viven en Producción de vivienda
@@ -245,8 +245,8 @@
       const eq=(D.labor.enoe_quarterly||[]).filter(x=>/^20\d{2}-T[1-4]$/.test(x.period));
       if(eq.length){
         const hasSplit=eq.every(x=>Number.isFinite(x.formal)&&Number.isFinite(x.informal));
-        if(hasSplit) bar('lab-enoe',eq.map(x=>x.period),[{label:'Formal',data:eq.map(x=>x.formal),backgroundColor:blue},{label:'Informal',data:eq.map(x=>x.informal),backgroundColor:brand}],{stacked:true,yTitle:'Miles de empleos'});
-        else bar('lab-enoe',eq.map(x=>x.period),[{label:'Empleos en construcción',data:eq.map(x=>x.total),backgroundColor:brand}],{yTitle:'Miles de empleos'});
+        if(hasSplit) bar('lab-enoe',eq.map(x=>x.period),[{label:'Formal',data:eq.map(x=>x.formal),backgroundColor:blue},{label:'Informal',data:eq.map(x=>x.informal),backgroundColor:brand}],{stacked:true,yTitle:'Miles de personas'});
+        else bar('lab-enoe',eq.map(x=>x.period),[{label:'Personas ocupadas en construcción',data:eq.map(x=>x.total),backgroundColor:brand}],{yTitle:'Miles de personas'});
         variationLine('lab-enoe-var',eq.map(x=>x.period),[ds('Variación anual',sameQuarter(eq,'total'),brand)],'Variación anual (%)','%');
       }
       else {const c=document.getElementById('lab-enoe'); if(c&&c.parentElement){c.style.display='none'; const m=document.createElement('div');m.className='note';m.style.padding='28px';m.innerHTML='<strong>Serie trimestral no disponible.</strong> El archivo ENOE no contiene observaciones válidas para mostrar.';c.parentElement.appendChild(m);}}
