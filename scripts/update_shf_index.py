@@ -192,106 +192,355 @@ def official_links(page_html, base):
     ]
 
 
+
 def parse_excel(blob):
+    """Lee Excel SHF horizontal, vertical o con encabezados fusionados.
+
+    Si los encabezados no permiten asignar los periodos, utiliza
+    coincidencias verificadas con el índice histórico nacional.
+    """
     import openpyxl
 
     wb = openpyxl.load_workbook(
         io.BytesIO(blob),
-        read_only=False,
         data_only=True,
+        read_only=False
     )
 
-    results = []
+    candidates = []
+    diagnostics = []
+
+    anchors = dict(SEED)
+
+    # Valores de control oficiales de 2025 y 2026.
+    anchors.update({
+        "2025-T1": 186.9,
+        "2025-T2": 191.9,
+        "2025-T3": 195.9,
+        "2025-T4": 199.0,
+        "2026-T1": 202.9,
+        "2026-T2": 205.9,
+    })
+
+    def num(value):
+        if isinstance(value, bool) or value is None:
+            return None
+
+        try:
+            v = float(
+                str(value).replace(",", "").strip()
+            )
+
+            return v if 50 <= v <= 700 else None
+
+        except (TypeError, ValueError):
+            return None
+
+    def year(value):
+        s = str(value or "").strip()
+
+        match = re.fullmatch(
+            r"(20(?:0\d|1\d|2\d|3\d))(?:\.0)?",
+            s
+        )
+
+        return int(match.group(1)) if match else None
+
+    def periods_between(start, n):
+        y, q = map(
+            int,
+            start.replace("-T", "-").split("-")
+        )
+
+        output = []
+
+        for _ in range(n):
+            output.append(f"{y}-T{q}")
+            q += 1
+
+            if q == 5:
+                q = 1
+                y += 1
+
+        return output
+
+    def put(candidate, method, sheet):
+        if len(candidate) < 6:
+            return
+
+        overlaps = [
+            p for p in candidate
+            if p in anchors
+        ]
+
+        matching = [
+            p for p in overlaps
+            if abs(candidate[p] - anchors[p]) <= 0.17
+        ]
+
+        if overlaps:
+            if len(matching) / len(overlaps) < 0.8:
+                return
+
+        ordered = [
+            candidate[p]
+            for p in sorted(candidate)
+        ]
+
+        # Proteger contra series de otra base o mal alineadas.
+        if any(
+            b < a - 3
+            for a, b in zip(
+                ordered, ordered[1:]
+            )
+        ):
+            return
+
+        candidates.append((
+            len(matching),
+            len(candidate),
+            max(candidate),
+            candidate,
+            method,
+            sheet
+        ))
 
     for ws in wb.worksheets:
-        rows = list(
-            ws.iter_rows(values_only=True)
-        )
+        rows = [
+            list(r)
+            for r in ws.iter_rows(
+                values_only=True
+            )
+        ]
+
+        locations = []
 
         for i, row in enumerate(rows):
+            for j, value in enumerate(row):
+                if re.match(
+                    r"^nacional(?:\b|\d|\s|\*)",
+                    normal(value)
+                ):
+                    locations.append((i, j))
 
-            if not any(
-                normal(v).startswith("nacional")
-                for v in row[:4]
-            ):
-                continue
-
-            for h in range(max(0, i - 8), i):
-
-                yearrow = list(rows[h])
-
-                years = [
-                    (j, int(v))
-                    for j, v in enumerate(yearrow)
-                    if re.fullmatch(
-                        r"20(?:1\d|2\d|3\d)",
-                        str(v or "").strip(),
-                    )
-                ]
-
-                if len(years) < 2:
-                    continue
-
-                for qidx in range(h + 1, i):
-
-                    qrow = rows[qidx]
-                    quarters = [
-                        quarter(v)
-                        for v in qrow
-                    ]
-
-                    if sum(
-                        v is not None
-                        for v in quarters
-                    ) < 6:
-                        continue
-
-                    found = {}
-
-                    for j, v in enumerate(row):
-
-                        if not isinstance(
-                            v, (int, float)
-                        ):
-                            continue
-
-                        if not 50 <= v <= 700:
-                            continue
-
-                        if (
-                            j >= len(quarters)
-                            or quarters[j] is None
-                        ):
-                            continue
-
-                        valid_years = [
-                            (idx, yr)
-                            for idx, yr in years
-                            if idx <= j
-                        ]
-
-                        if valid_years:
-                            yr = valid_years[-1][1]
-
-                            found[
-                                f"{yr}-T{quarters[j]}"
-                            ] = round(
-                                float(v), 3
-                            )
-
-                    if len(found) >= 8:
-                        results.append(found)
-
-    if not results:
-        raise ValueError(
-            "No se encontró tabla Nacional "
-            "con años/trimestres en Excel"
+        diagnostics.append(
+            f"{ws.title}: "
+            f"{ws.max_row}x{ws.max_column}, "
+            f"nacional={locations[:5]}"
         )
 
-    return max(
-        results,
-        key=len,
+        for i, j in locations:
+
+            # A. Tabla horizontal con fila Nacional.
+            series = [
+                (c, num(v))
+                for c, v in enumerate(
+                    rows[i][j + 1:],
+                    j + 1
+                )
+            ]
+
+            series = [
+                (c, v)
+                for c, v in series
+                if v is not None
+            ]
+
+            # Buscar encabezados de año y trimestre.
+            for h in range(max(0, i - 15), i):
+                years = [
+                    (c, year(v))
+                    for c, v in enumerate(rows[h])
+                    if year(v)
+                ]
+
+                if not years:
+                    continue
+
+                for k in range(h + 1, i):
+                    qs = {
+                        c: quarter(v)
+                        for c, v in enumerate(rows[k])
+                        if quarter(v)
+                    }
+
+                    if len(qs) < 4:
+                        continue
+
+                    aligned = {}
+
+                    for c, v in series:
+                        if c not in qs:
+                            continue
+
+                        prev = [
+                            yr
+                            for pos, yr in years
+                            if pos <= c
+                        ]
+
+                        if prev:
+                            aligned[
+                                f"{prev[-1]}-T{qs[c]}"
+                            ] = v
+
+                    put(
+                        aligned,
+                        "encabezados",
+                        ws.title
+                    )
+
+            # B. Alineación mediante valores históricos.
+            # Útil cuando los encabezados están fusionados.
+            values = [
+                v for _, v in series
+            ]
+
+            if len(values) >= 6:
+                best = []
+
+                for sy in range(2005, 2027):
+                    for sq in range(1, 5):
+
+                        ps = periods_between(
+                            f"{sy}-T{sq}",
+                            len(values)
+                        )
+
+                        matches = [
+                            p
+                            for p, v in zip(ps, values)
+                            if (
+                                p in anchors
+                                and abs(
+                                    v - anchors[p]
+                                ) <= 0.17
+                            )
+                        ]
+
+                        conflicts = [
+                            p
+                            for p, v in zip(ps, values)
+                            if (
+                                p in anchors
+                                and abs(
+                                    v - anchors[p]
+                                ) > 0.17
+                            )
+                        ]
+
+                        if (
+                            len(matches) >= 3
+                            and not conflicts
+                        ):
+                            best.append((
+                                len(matches),
+                                sy,
+                                sq,
+                                ps
+                            ))
+
+                if best:
+                    best.sort(reverse=True)
+
+                    count, sy, sq, ps = best[0]
+
+                    if (
+                        len(best) == 1
+                        or count > best[1][0]
+                    ):
+                        put(
+                            dict(zip(ps, values)),
+                            "anclajes",
+                            ws.title
+                        )
+
+            # C. Formato vertical:
+            # columnas Año, Trimestre e índice Nacional.
+            if len(rows) > i + 6:
+
+                header = [
+                    normal(v)
+                    for v in rows[i]
+                ]
+
+                for yr_col in range(len(header)):
+                    if not any(
+                        word in header[yr_col]
+                        for word in ("ano", "year")
+                    ):
+                        continue
+
+                    for q_col in range(len(header)):
+                        if (
+                            "trimestre" not in header[q_col]
+                            and "quarter" not in header[q_col]
+                        ):
+                            continue
+
+                        found = {}
+
+                        for row in rows[i + 1:]:
+                            if max(
+                                j, yr_col, q_col
+                            ) >= len(row):
+                                continue
+
+                            y = year(row[yr_col])
+                            q = quarter(row[q_col])
+                            v = num(row[j])
+
+                            if (
+                                y
+                                and q
+                                and v is not None
+                            ):
+                                found[
+                                    f"{y}-T{q}"
+                                ] = v
+
+                        put(
+                            found,
+                            "vertical",
+                            ws.title
+                        )
+
+    if not candidates:
+        raise ValueError(
+            "Excel sin serie Nacional verificable. "
+            "Hojas: "
+            + " | ".join(diagnostics)[:1500]
+        )
+
+    candidates.sort(
+        key=lambda x: (
+            x[0],
+            x[1],
+            x[2]
+        ),
+        reverse=True
     )
+
+    score, count, last, data, method, sheet = (
+        candidates[0]
+    )
+
+    if score < 3:
+        raise ValueError(
+            "Excel con menos de tres puntos "
+            "históricos verificables"
+        )
+
+    print(
+        f"SHF Excel: hoja={sheet}, "
+        f"método={method}, "
+        f"{count} trimestres, "
+        f"{score} controles verificados, "
+        f"último={last}",
+        flush=True
+    )
+
+    return data
 
 
 def parse_pdf(blob):
