@@ -78,100 +78,19 @@ def parse_table(html):
 # Función sin dependencias de selectores ASP.NET variables.
 # La página usa <label for="id"> o input + texto dentro de una celda.
 SET_CHECKBOXES_JS = r'''({mode, fromYear}) => {
-  const normalize = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+  const normalize = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
   const inputs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
-  const info = el => {
-    const label = Array.from(document.querySelectorAll('label[for]')).find(l => l.htmlFor === el.id);
-    let s = label ? label.textContent : '';
-    if (!s) {
-      let sib=el.nextSibling;
-      for(let i=0; sib && i<4; i++,sib=sib.nextSibling) {
-        if(sib.textContent && sib.textContent.trim()) {s=sib.textContent;break;}
-      }
+  const getLabel = el => {
+    const associated = Array.from(document.querySelectorAll('label[for]')).find(l => l.htmlFor === el.id);
+    if (associated && associated.textContent.trim()) return normalize(associated.textContent);
+    let node = el.nextSibling;
+    for (let i=0; node && i<5; i++,node=node.nextSibling) {
+      if (node.textContent && node.textContent.trim()) return normalize(node.textContent);
     }
-    if (!s) s=(el.parentElement?.textContent||'').slice(0,110);
-    return normalize(s);
+    return normalize(el.parentElement?.textContent || '');
   };
-  let touched=[];
+  const updated = [];
+  const found = [];
   for (const el of inputs) {
-    const s=info(el);
-    let desired=null;
-    if(mode==='variables') {
-      if (/^3\.2\. sector de actividad economica/.test(s)) desired=true;
-      if (/^poblacion ocupada$/.test(s)) desired=true;
-      if (/^3\.1\. posicion en la ocupacion/.test(s)) desired=false;
-    } else if (mode==='years') {
-      const y = /^20\d{2}$/.test(s) ? Number(s) : (/^20\d{2}$/.test(el.value)?Number(el.value):null);
-      if(y!==null && y>=2005 && y<=2099) desired=y>=fromYear;
-    }
-    if (desired!==null){ el.checked=desired; touched.push([s,desired]); }
-  }
-  return touched;
-}'''
-
-
-def fetch_live():
-    from playwright.sync_api import sync_playwright
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
-        try:
-            page = browser.new_page(locale='es-MX', viewport={'width': 1600, 'height': 1000})
-            page.set_default_timeout(35000)
-            response = page.goto(URL, wait_until='domcontentloaded', timeout=90000)
-            if response is None or response.status >= 400:
-                raise RuntimeError(f'InfoLaboral no abrió: HTTP {response.status if response else "sin respuesta"}')
-            page.locator('#btngind').click()
-            page.locator('#btngind_ind').click()
-            selected = page.evaluate(SET_CHECKBOXES_JS, {'mode':'variables', 'fromYear':2016})
-            if not any('3.2.' in t[0] for t in selected):
-                raise RuntimeError('No se pudo identificar la casilla de sector de actividad económica')
-            page.locator('#btngind_cob').click()
-            selected_years = page.evaluate(SET_CHECKBOXES_JS, {'mode':'years', 'fromYear':2016})
-            if not any('2016' in t[0] for t in selected_years):
-                raise RuntimeError('No se pudieron seleccionar los años desde 2016')
-            # La configuración predeterminada es Nacional / Total / Todos los trimestres / Absolutos.
-            # Verificamos los resultados por estructura, cobertura y controles históricos.
-            page.locator('#btngind_con').click(timeout=90000)
-            page.locator('#reporte1').wait_for(state='attached', timeout=90000)
-            content = page.locator('#reporte1').evaluate('(el) => el.outerHTML')
-            return parse_table(content)
-        finally:
-            browser.close()
-
-
-def main():
-    status = {'checked_at_utc': datetime.now(timezone.utc).isoformat(),
-              'source': 'INEGI ENOE InfoLaboral (consulta automática HTML)',
-              'units': 'miles de personas', 'updated': False}
-    try:
-        rows = fetch_live()
-        previous = read_existing()
-        last_old = max((r.get('periodo','') for r in previous), default='')
-        if rows[-1]['periodo'] < last_old:
-            raise ValueError(f'Fuente retrocedió de {last_old} a {rows[-1]["periodo"]}')
-        # No convertir una posible caída del sitio en un borrado de los datos existentes.
-        old_map = {r['periodo']:r for r in previous}
-        for row in rows:
-            old = old_map.get(row['periodo'])
-            if old:
-                for field in ('formal', 'informal'):
-                    row[field] = old.get(field,'')
-        tmp = OUT.with_suffix('.csv.tmp')
-        with tmp.open('w', encoding='utf-8-sig', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['periodo','total','ocupada_total','formal','informal'])
-            writer.writeheader()
-            writer.writerows(rows)
-        tmp.replace(OUT)
-        status.update(updated=True, first_quarter=rows[0]['periodo'], last_quarter=rows[-1]['periodo'],
-                      observations=len(rows), gap_2020_T2=True)
-        print(f'ENOE automática: {rows[0]["periodo"]} a {rows[-1]["periodo"]}; {len(rows)} observaciones')
-    except Exception as exc:
-        status['error'] = str(exc)
-        print(f'ERROR ENOE InfoLaboral: {exc}', flush=True)
-        raise
-    finally:
-        STATUS.write_text(json.dumps(status, ensure_ascii=False, indent=2)+'\n',encoding='utf-8')
-
-
-if __name__ == '__main__':
-    main()
+    const label = getLabel(el);
+    const value = (el.value || '').trim();
