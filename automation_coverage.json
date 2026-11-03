@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-03T17:49:10",
+  "generated_at": "2026-11-03T17:56:30",
   "objetivo": "Preferencia 2016; alternativa 2018 cuando la serie validada no tenga histórico anterior o cambie metodología",
   "series": [
     {
@@ -160,8 +160,8 @@
       "frecuencia": "trimestral",
       "objetivo_inicio": "2016-T1",
       "primer_periodo": "2016-T1",
-      "ultimo_periodo": "2019-T4",
-      "observaciones": 16,
+      "ultimo_periodo": "2026-T2",
+      "observaciones": 42,
       "cobertura_objetivo": "completo"
     },
     {

@@ -1,6 +1,6 @@
 {
   "group": "quarterly",
-  "run_at_utc": "2026-11-03T17:49:10.426727+00:00",
+  "run_at_utc": "2026-11-03T17:56:30.637248+00:00",
   "results": [
     {
       "script": "update_inegi_series.py",
@@ -17,12 +17,11 @@
     {
       "script": "update_shf_index.py",
       "group": null,
-      "exit_code": 1,
-      "status": "error"
+      "exit_code": 0,
+      "status": "ok"
     }
   ],
   "failed": [
-    "update_inegi_series.py",
-    "update_shf_index.py"
+    "update_inegi_series.py"
   ]
 }

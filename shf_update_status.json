@@ -1,5 +1,16 @@
 {
-  "status": "error",
-  "checked_at_utc": "2026-11-03T17:49:10.357666+00:00",
-  "error": "SHF: ningún anexo pudo validar la fila Nacional. https://www.gob.mx/cms/uploads/attachment/file/1100172/Nota_metodol_gica_del__ndice_SHF_de_Precios_de_la_Vivienda_en_M_xico.pdf: PDF sin tabla Nacional legible; se requiere PDF con texto seleccionable | https://www.gob.mx/cms/uploads/attachment/file/1097035/Indice_SHF_datos_abiertos_2_trim_2026.xlsx: Excel sin serie Nacional verificable. Hojas: Indice SHF datos abiertos: 10407x7, nacional=[(1, 1), (122, 1), (243, 1), (364, 1), (485, 1)] | https://www.gob.mx/cms/uploads/attachment/file/1077615/_ndice_SHF_2020-2024.pdf: PDF sin tabla Nacional legible; se requiere PDF con texto seleccionable"
+  "updated_at_utc": "2026-11-03T17:56:30.605389+00:00",
+  "status": "ok",
+  "latest_period": "2026-T2",
+  "first_period": "2015-T1",
+  "index_rows": 46,
+  "variation_rows": 42,
+  "sources": [
+    {
+      "url": "https://www.gob.mx/cms/uploads/attachment/file/1097035/Indice_SHF_datos_abiertos_2_trim_2026.xlsx",
+      "format": "xlsx",
+      "periods": 46,
+      "last": "2026-T2"
+    }
+  ]
 }
