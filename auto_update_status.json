@@ -3,7 +3,7 @@
     "status": "conservado_sin_cambio",
     "error": "vab_construccion: falta ID validado; el catálogo de INEGI no responde y no se puede resolver automáticamente"
   },
-  "updated_at_utc": "2026-11-03T16:48:44.500779+00:00",
+  "updated_at_utc": "2026-11-03T16:55:01.061157+00:00",
   "inicio_historico": "2016",
   "updated_by": "GitHub Actions / INEGI API"
 }

@@ -1,7 +1,10 @@
 {
-  "checked_at_utc": "2026-11-03T16:48:44.621284+00:00",
+  "checked_at_utc": "2026-11-03T16:55:01.189093+00:00",
   "source": "INEGI ENOE InfoLaboral (consulta automática HTML)",
   "units": "miles de personas",
-  "updated": false,
-  "error": "El servidor aún no habilita Consultar. Revisar los controles temporales registrados."
+  "updated": true,
+  "first_quarter": "2016-T1",
+  "last_quarter": "2026-T2",
+  "observations": 41,
+  "gap_2020_T2": true
 }
