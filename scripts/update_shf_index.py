@@ -1,223 +1,260 @@
 #!/usr/bin/env python3
-"""Actualiza Índice SHF desde el archivo oficial de datos abiertos.
+"""Índice SHF nacional (base 2017=100): PDF/XLSX oficiales, sin captura manual.
 
-Busca automáticamente el enlace más reciente en gob.mx y extrae la serie nacional
-trimestral. Si SHF modifica el formato y no se puede reconocer con seguridad, no
-sobrescribe el CSV vigente.
+Busca documentos oficiales actuales, lee la fila Nacional por año/trimestre,
+conserva los datos históricos y calcula variaciones anuales desde los niveles.
+Requiere pypdf y openpyxl (presentes en update-quarterly.yml).
 """
-import csv, io, json, re, sys, tempfile, zipfile
-from datetime import datetime
+import csv
+import io
+import json
+import re
+import sys
+import unicodedata
+from datetime import datetime, timezone
+from html import unescape
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
-ROOT=Path(__file__).resolve().parents[1]
-OUT=ROOT/'shf_indice_trimestral.csv'
-OUT_STATE=ROOT/'shf_precios_entidad.csv'
-OUT_LEVEL=ROOT/'shf_indice_nivel_trimestral.csv'
-STATUS=ROOT/'shf_update_status.json'
-PAGE='https://www.gob.mx/shf/documentos/indice-shf-de-precios-de-la-vivienda-en-mexico-2025-a-2026'
-UA='Mozilla/5.0 (compatible; Infonavit-dashboard/1.0)'
+ROOT = Path(__file__).resolve().parents[1]
+LEVEL = ROOT / 'shf_indice_nivel_trimestral.csv'
+YOY = ROOT / 'shf_indice_trimestral.csv'
+STATUS = ROOT / 'shf_update_status.json'
+PAGES = [
+    'https://www.gob.mx/shf/documentos/indice-shf-de-precios-de-la-vivienda-en-mexico-2025-a-2026',
+    'https://www.gob.mx/shf/documentos/indice-shf-de-precios-de-la-vivienda-en-mexico-2020-2024',
+    'https://www.gob.mx/shf/documentos/indice-shf-de-precios-de-la-vivienda-en-mexico-2015-a-2019',
+]
+UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36'
+SEED = {
+    '2015-T1':82.6,'2015-T2':85.6,'2015-T3':88.2,'2015-T4':89.4,
+    '2016-T1':90.5,'2016-T2':92.2,'2016-T3':93.6,'2016-T4':94.6,
+    '2017-T1':97.1,'2017-T2':99.1,'2017-T3':101.0,'2017-T4':102.7,
+    '2018-T1':105.4,'2018-T2':107.7,'2018-T3':110.1,'2018-T4':112.4,
+    '2019-T1':115.0,'2019-T2':117.6,'2019-T3':119.4,'2019-T4':121.0,
+}
+
+
+def normal(s):
+    return unicodedata.normalize('NFKD',str(s or '')).encode('ascii','ignore').decode().lower().strip()
+
 
 def fetch(url):
-    req=Request(url,headers={'User-Agent':UA,'Accept':'*/*'})
-    with urlopen(req,timeout=90) as r:return r.read(),r.geturl(),r.headers.get('Content-Type','')
-
-def links(html,base):
-    s=html.decode('utf-8','ignore')
-    found=[]
-    for m in re.finditer(r'href=["\']([^"\']+)["\']',s,re.I):
-        u=urljoin(base,m.group(1)); context=s[max(0,m.start()-250):m.end()+250].lower()
-        if ('datos abiertos' in context or 'indice shf' in context) and any(x in u.lower() for x in ('.xlsx','.xls','.csv','download','uploads')): found.append(u)
-    # preferred newest-ish links first by textual order reversed, deduplicated
-    return list(dict.fromkeys(found))[::-1]
-
-def to_rows(blob,name=''):
-    if name.lower().endswith('.csv') or (b',' in blob[:500] and not blob.startswith(b'PK')):
-        text=blob.decode('utf-8-sig','ignore'); return [list(r) for r in csv.reader(io.StringIO(text))]
-    try:
-        import openpyxl
-        wb=openpyxl.load_workbook(io.BytesIO(blob),data_only=True,read_only=True)
-        return [[c for c in row] for ws in wb.worksheets for row in ws.iter_rows(values_only=True)]
-    except Exception as e: raise RuntimeError(f'No se pudo leer archivo SHF: {e}')
-
-def norm_period(v):
-    s=str(v or '').strip().upper().replace(' ','')
-    m=re.search(r'(20\d{2})[-_/]?(?:T|Q|TRIM(?:ESTRE)?)?([1-4])',s)
-    if m:return f'{m.group(1)}-T{m.group(2)}'
-    # Excel date or labels like 1T2026
-    m=re.search(r'([1-4])T(20\d{2})',s)
-    if m:return f'{m.group(2)}-T{m.group(1)}'
-    return None
-
-def number(v):
-    try:return float(str(v).replace('%','').replace(',','').strip())
-    except:return None
-
-def extract(rows):
-    # Strategy A: each row includes period and one national YoY/variation figure.
-    out={}
-    for i,row in enumerate(rows):
-        cells=[str(x or '').strip() for x in row]
-        per=next((norm_period(x) for x in cells if norm_period(x)),None)
-        if not per: continue
-        # prioritize cells near headers/labels indicating variacion/apreciacion/nacional
-        nums=[number(x) for x in row]
-        nums=[x for x in nums if x is not None and -50<x<1000]
-        # annual variations are typically -20..50, index typically >50
-        cand=[x for x in nums if -30<=x<=50]
-        if cand:
-            # avoid quarter/year tokens converted to number; choose last plausible decimal/rate
-            out[per]=cand[-1]
-    # Strategy B: header row periods, row named Nacional/Variación anual
-    for i,row in enumerate(rows):
-        labels=' | '.join(str(x or '') for x in row).lower()
-        if ('nacional' in labels and ('vari' in labels or 'aprecia' in labels)) or ('variación anual' in labels and 'nacional' in labels):
-            for j in range(max(0,i-5),min(len(rows),i+6)):
-                hdr=rows[j]
-                periods=[norm_period(x) for x in hdr]
-                if sum(bool(x) for x in periods)>=2:
-                    for k,p in enumerate(periods):
-                        if p and k<len(row):
-                            v=number(row[k])
-                            if v is not None and -30<=v<=50: out[p]=v
-    return dict(sorted((p,v) for p,v in out.items() if int(p[:4])>=2016))
+    with urlopen(Request(url,headers={'User-Agent':UA,'Accept':'*/*'}),timeout=70) as response:
+        return response.read(),response.geturl(),response.headers.get('Content-Type','')
 
 
+def quarter(x):
+    s=normal(x).upper().strip().replace(' ','')
+    return {'I':1,'II':2,'III':3,'IV':4,'1':1,'2':2,'3':3,'4':4,
+            'T1':1,'T2':2,'T3':3,'T4':4}.get(s)
 
-def extract_official_index(rows, annual):
-    """Detect an explicitly labeled national index, base 2017=100.
 
-    Accept only when ≥3 observed year-over-year movements independently match
-    the SHF annual series (tolerance due to published rounding). Ambiguous files
-    are rejected, rather than reconstructing or inventing a level.
+def official_links(page_html,base):
+    """Busca anexos vinculados desde las páginas oficiales (sin ID fijo)."""
+    from bs4 import BeautifulSoup
+    soup=BeautifulSoup(page_html,'html.parser')
+    candidates=[]
+    for a in soup.find_all('a',href=True):
+        url=urljoin(base,unescape(a['href']))
+        host=urlparse(url).hostname or ''
+        if not (host=='gob.mx' or host.endswith('.gob.mx')):
+            continue
+        if any(s in url.lower() for s in ('facebook','twitter','javascript:')):
+            continue
+        ctx=' '.join([a.get_text(' ',strip=True),
+                      a.parent.get_text(' ',strip=True)[:450] if a.parent else '',
+                      a.find_previous(string=re.compile('datos abiertos|índice shf|indice shf',re.I)) or ''])
+        low=(url+' '+ctx).lower()
+        is_file=any(s in url.lower() for s in ('/cms/uploads/attachment/','/download','.pdf','.xlsx','.xls'))
+        if not is_file: continue
+        # Precisión: el anexo debe estar vinculado a índice o datos abiertos,
+        # o formar parte de las descargas del documento oficial.
+        score=(10 if 'datos abiertos' in normal(ctx) else 0)+\
+              (6 if url.lower().endswith('.pdf') else 0)+\
+              (3 if url.lower().endswith(('.xlsx','.xls')) else 0)+\
+              (1 if 'indice' in normal(ctx) else 0)
+        candidates.append((score,url))
+    # La primera aparición en el sitio es usualmente el trimestre más reciente.
+    return [u for _,u in sorted(dict((u,(score,i)) for i,(score,u) in enumerate(candidates)).items(),
+                               key=lambda t:(-t[1][0],t[1][1]))]
+
+
+def parse_excel(blob):
+    import openpyxl
+    wb=openpyxl.load_workbook(io.BytesIO(blob),read_only=False,data_only=True)
+    results=[]
+    for ws in wb.worksheets:
+        # Las celdas fusionadas de los años no repiten su valor: propagarlo.
+        rows=list(ws.iter_rows(values_only=True))
+        for i,row in enumerate(rows):
+            if not any(normal(v).startswith('nacional') for v in row[:4]):continue
+            for h in range(max(0,i-8),i):
+                yearrow=list(rows[h])
+                years=[(j,int(v)) for j,v in enumerate(yearrow)
+                       if re.fullmatch(r'20(?:1\d|2\d|3\d)',str(v or '').strip())]
+                if len(years)<2:continue
+                # Buscar encabezado con I,II,III,IV cerca del encabezado de años.
+                for qidx in range(h+1,i):
+                    qrow=rows[qidx]
+                    quarters=[quarter(v) for v in qrow]
+                    if sum(v is not None for v in quarters)<6:continue
+                    found={}
+                    for j,v in enumerate(row):
+                        if not isinstance(v,(int,float)) or not 50<=v<=700:continue
+                        if j>=len(quarters) or quarters[j] is None:continue
+                        valid_years=[(idx,yr) for idx,yr in years if idx<=j]
+                        if valid_years:
+                            yr=valid_years[-1][1]
+                            found[f'{yr}-T{quarters[j]}']=round(float(v),3)
+                    if len(found)>=8:results.append(found)
+    if not results:raise ValueError('No se encontró tabla Nacional con años/trimestres en Excel')
+    return max(results,key=len)
+
+
+def parse_pdf(blob):
+    """Extrae una tabla de PDF textual cuyo encabezado está por años y la fila Nacional es horizontal.
+
+    No utiliza OCR: PDF que contiene sólo imágenes se rechaza sin alterar el histórico.
     """
-    possibilities=[]
-    def normalized(x):
-        import unicodedata
-        return unicodedata.normalize('NFKD', str(x or '')).encode('ascii','ignore').decode().lower()
-    def check(candidate):
-        tests=[]
-        for per,v in candidate.items():
-            if per not in annual: continue
-            year,quarter=per.split('-T')
-            prev=candidate.get(f'{int(year)-1}-T{quarter}')
-            if prev is not None and prev>0:
-                tests.append(abs((v/prev-1)*100-annual[per]))
-        return len(tests)>=3 and sorted(tests)[len(tests)//2]<0.75 and max(tests)<2
-    # Vertical: one line per quarter, a column expressly headed "national index".
-    for h,head in enumerate(rows):
-        heads=[normalized(v) for v in head]
-        for col,label in enumerate(heads):
-            if 'indice' not in label or ('varia' in label or 'tasa' in label or 'porcent' in label):continue
-            if not ('nacion' in label or any('nacion' in x for x in heads)):continue
-            result={}
-            for row in rows[h+1:h+180]:
-                if col>=len(row):continue
-                per=next((norm_period(v) for v in row[:min(3,len(row))] if norm_period(v)),None)
-                value=number(row[col])
-                if per and value and 60<=value<=1000:result[per]=value
-            if check(result):possibilities.append(result)
-    # Horizontal: row tagged national + index, columns tagged by quarters.
-    for h,head in enumerate(rows):
-        periods=[norm_period(v) for v in head]
-        if sum(bool(t) for t in periods)<8:continue
-        for row in rows[h+1:h+20]:
-            description=' '.join(normalized(v) for v in row[:5])
-            if 'nacion' not in description or 'indice' not in description or 'varia' in description:continue
-            result={}
-            for col,per in enumerate(periods):
-                value=number(row[col]) if col<len(row) else None
-                if per and value and 60<=value<=1000:result[per]=value
-            if check(result):possibilities.append(result)
-    if not possibilities:return {}
-    best=max(possibilities,key=len)
-    return dict(sorted((k,v) for k,v in best.items() if int(k[:4])>=2016))
+    from pypdf import PdfReader
+    reader=PdfReader(io.BytesIO(blob))
+    candidates=[]
+    for page in reader.pages:
+        text=page.extract_text(extraction_mode='layout') or ''
+        lines=[line.strip() for line in text.splitlines() if line.strip()]
+        for i,line in enumerate(lines):
+            if not re.match(r'^nacional(?:\s|\d|[¹*])',normal(line)):
+                continue
+            # Algunos archivos usan Nacional¹, Nacional1 o Nacional*. Separar la etiqueta.
+            tail=re.sub(r'^nacional\s*(?:[¹*]|\d(?=\s))?\s*','',line,flags=re.I)
+            values=[float(x) for x in re.findall(r'(?<!\d)(?:\d{2,3})\.\d{1,3}(?!\d)',tail)]
+            values=[v for v in values if 50<=v<=700]
+            if len(values)<6:
+                # Algunos PDFs envuelven la fila Nacional en dos líneas.
+                for extra in lines[i+1:i+3]:
+                    if re.match(r'^[A-Za-zÁÉÍÓÚáéíóú]',extra):break
+                    values += [float(x) for x in re.findall(r'(?<!\d)\d{2,3}\.\d{1,3}(?!\d)',extra) if 50<=float(x)<=700]
+            if len(values)<6:continue
+            possible=[]
+            for header in lines[max(0,i-7):i]:
+                yrs=[int(x) for x in re.findall(r'(?<!\d)20(?:1\d|2\d|3\d)(?!\d)',header)]
+                if len(set(yrs))>=2 and yrs==sorted(yrs):possible.append(yrs)
+            if not possible:continue
+            years=max(possible,key=len)
+            # Cabecera: grupos sucesivos de cuatro trimestres y año final parcial.
+            # Aceptamos solo número de valores compatible: 4 por año previo,
+            # 1 a 4 valores para el año más reciente.
+            n_prior=4*(len(years)-1)
+            last=len(values)-n_prior
+            if not 1<=last<=4:continue
+            got={}
+            idx=0
+            for year in years:
+                limit=last if year==years[-1] else 4
+                for q in range(1,limit+1):
+                    got[f'{year}-T{q}']=values[idx]
+                    idx+=1
+            if len(got)>=6:candidates.append(got)
+    if not candidates:
+        raise ValueError('PDF sin tabla Nacional legible; se requiere PDF con texto seleccionable')
+    return max(candidates,key=lambda d:(max(d),len(d)))
 
-def write_official_index(levels):
-    if not levels:return 0
-    old={}
-    if OUT_LEVEL.exists():
-        with OUT_LEVEL.open(encoding='utf-8-sig',newline='') as f:
+
+def read_levels():
+    out=dict(SEED)
+    if LEVEL.exists():
+        with LEVEL.open(newline='',encoding='utf-8-sig') as f:
             for r in csv.DictReader(f):
-                v=number(r.get('indice'))
-                if v is not None:old[r['periodo']]=v
-    old.update(levels)
-    tmp=OUT_LEVEL.with_suffix('.csv.tmp')
+                try:
+                    if re.fullmatch(r'20\d\d-T[1-4]',r['periodo']):
+                        out[r['periodo']]=float(r['indice'])
+                except (KeyError,TypeError,ValueError):pass
+    return out
+
+
+def validate(candidate,existing):
+    if len(candidate)<6:raise ValueError('Menos de seis datos del índice nacional')
+    for p,v in candidate.items():
+        if not re.fullmatch(r'20\d\d-T[1-4]',p) or not 50<=v<=700:
+            raise ValueError(f'Periodo/índice inválido: {p}={v}')
+    shared=[p for p in candidate if p in existing]
+    # PDF publicado con 1 decimal: tolerancia 0.16 puntos contra valor histórico.
+    if shared and any(abs(candidate[p]-existing[p])>0.17 for p in shared):
+        raise ValueError('No coincide con el histórico en '+','.join(p for p in shared if abs(candidate[p]-existing[p])>0.17)[:140])
+    if not shared:
+        # Evitar unir otra serie o base de medición distinta.
+        raise ValueError('No hay trimestres coincidentes con el histórico para validar base 2017=100')
+    return True
+
+
+def write_csv(path,headers,rows):
+    tmp=path.with_suffix('.csv.tmp')
     with tmp.open('w',encoding='utf-8-sig',newline='') as f:
-        w=csv.writer(f)
-        w.writerow(['periodo','indice','base','fuente'])
-        for per,v in sorted(old.items()):w.writerow([per,round(v,6),'2017=100','SHF · Índice nacional oficial'])
-    tmp.replace(OUT_LEVEL)
-    return len(old)
+        w=csv.writer(f);w.writerow(headers);w.writerows(rows)
+    tmp.replace(path)
 
-STATE_ALIASES={
-'NACIONAL':'Nacional','AGUASCALIENTES':'Aguascalientes','BAJA CALIFORNIA':'Baja California','BAJA CALIFORNIA SUR':'Baja California Sur','CAMPECHE':'Campeche','CHIAPAS':'Chiapas','CHIHUAHUA':'Chihuahua','CIUDAD DE MEXICO':'Ciudad de México','CDMX':'Ciudad de México','COAHUILA':'Coahuila','COAHUILA DE ZARAGOZA':'Coahuila','COLIMA':'Colima','DURANGO':'Durango','GUANAJUATO':'Guanajuato','GUERRERO':'Guerrero','HIDALGO':'Hidalgo','JALISCO':'Jalisco','MEXICO':'Estado de México','ESTADO DE MEXICO':'Estado de México','MICHOACAN':'Michoacán','MICHOACAN DE OCAMPO':'Michoacán','MORELOS':'Morelos','NAYARIT':'Nayarit','NUEVO LEON':'Nuevo León','OAXACA':'Oaxaca','PUEBLA':'Puebla','QUERETARO':'Querétaro','QUINTANA ROO':'Quintana Roo','SAN LUIS POTOSI':'San Luis Potosí','SINALOA':'Sinaloa','SONORA':'Sonora','TABASCO':'Tabasco','TAMAULIPAS':'Tamaulipas','TLAXCALA':'Tlaxcala','VERACRUZ':'Veracruz','VERACRUZ DE IGNACIO DE LA LLAVE':'Veracruz','YUCATAN':'Yucatán','ZACATECAS':'Zacatecas'}
-def ascii_upper(x):
-    import unicodedata
-    return unicodedata.normalize('NFKD',str(x or '')).encode('ascii','ignore').decode().upper().strip()
-def extract_states(rows,period):
-    out=[]
-    for row in rows:
-        cells=[str(x or '').strip() for x in row]
-        entity=None
-        for x in cells[:5]:
-            k=ascii_upper(x)
-            if k in STATE_ALIASES: entity=STATE_ALIASES[k]; break
-        if not entity: continue
-        vals=[]
-        for x in row:
-            v=number(x)
-            if v is not None and 100000<=v<=30000000: vals.append(v)
-        if len(vals)>=4:
-            # Los archivos SHF suelen presentar promedio, p25, mediana y p75.
-            avg,p25,p50,p75=vals[-4:]
-            if p25<=p50<=p75 and avg>0:
-                out.append({'entidad':entity,'precio_promedio_pesos':round(avg),'p25_pesos':round(p25),'p50_pesos':round(p50),'p75_pesos':round(p75),'periodo':period,'fuente':'Sociedad Hipotecaria Federal (SHF)'})
-    # Deduplicar por entidad y exigir cobertura nacional amplia.
-    d={r['entidad']:r for r in out}; out=list(d.values())
-    if len(out)<30 or 'Nacional' not in d:return []
-    return sorted(out,key=lambda r:(r['entidad']!='Nacional',r['entidad']))
-def write_states(rows):
-    tmp=OUT_STATE.with_suffix('.csv.tmp')
-    with tmp.open('w',encoding='utf-8-sig',newline='') as f:
-        w=csv.DictWriter(f,fieldnames=['entidad','precio_promedio_pesos','p25_pesos','p50_pesos','p75_pesos','periodo','fuente']);w.writeheader();w.writerows(rows)
-    tmp.replace(OUT_STATE)
-
-def old_map():
-    d={}
-    if OUT.exists():
-        with OUT.open(encoding='utf-8-sig',newline='') as f:
-            for r in csv.DictReader(f):
-                try:d[r['periodo']]=float(r['variacion_anual'])
-                except:pass
-    return d
-
-def validate(new,old):
-    if len(new)<8: raise RuntimeError(f'SHF: sólo se reconocieron {len(new)} trimestres; no se reemplaza la serie.')
-    ov=[abs(new[p]-old[p]) for p in new if p in old]
-    if ov and sum(x>1.5 for x in ov)>max(2,len(ov)//3): raise RuntimeError('SHF: la serie detectada no coincide con el histórico (posible cambio de formato).')
 
 def main():
-    html,base,_=fetch(PAGE); candidates=links(html,base)
-    if not candidates: raise RuntimeError('No se encontró enlace de datos abiertos SHF en la página oficial.')
-    old=old_map(); errors=[]
-    for u in candidates:
+    old=read_levels()
+    combined=dict(old)
+    diagnostics=[]
+    sources=[]
+    discovered=[]
+    for page in PAGES:
         try:
-            blob,final,ctype=fetch(u); rows=to_rows(blob,final); new=extract(rows); validate(new,old)
-            with OUT.open('w',encoding='utf-8',newline='') as f:
-                w=csv.writer(f); w.writerow(['periodo','variacion_anual']); [w.writerow([p,f'{v:.3f}'.rstrip('0').rstrip('.')]) for p,v in new.items()]
-            latest=max(new); yy,qq=latest.split('-T'); label=f'{qq}T {yy}'
-            level_rows=extract_official_index(rows,new)
-            level_count=write_official_index(level_rows)
-            state_rows=extract_states(rows,label)
-            if state_rows: write_states(state_rows)
-            STATUS.write_text(json.dumps({'updated_at':datetime.now().isoformat(timespec='seconds'),'status':'ok','source_page':PAGE,'download_url':final,'latest_period':latest,'rows':len(new),'state_rows':len(state_rows),'index_level_rows':level_count,'index_level_status':'validado' if level_rows else 'pendiente_nivel_oficial'},ensure_ascii=False,indent=2),encoding='utf-8')
-            print(f'SHF actualizado: {len(new)} trimestres hasta {latest}; estados={len(state_rows)}; niveles validados={level_count}'); return
-        except Exception as e: errors.append(f'{u}: {e}')
-    raise RuntimeError(' | '.join(errors[-4:]))
+            html,base,_=fetch(page)
+            for url in official_links(html,base):
+                if url not in discovered:discovered.append(url)
+        except Exception as exc:
+            diagnostics.append(f'Página {page}: {exc}')
+    if not discovered:
+        raise RuntimeError('SHF: no se identificaron anexos en páginas oficiales. '+' | '.join(diagnostics[-2:]))
+    # Revisar múltiples anexos: el PDF reciente puede cubrir 2019-actualidad,
+    # mientras que el histórico 2015-2019 se conserva de la base inicial.
+    for url in discovered[:20]:
+        try:
+            blob,final,ctype=fetch(url)
+            if blob.startswith(b'%PDF'):
+                data=parse_pdf(blob);fmt='pdf'
+            elif blob.startswith(b'PK\x03\x04'):
+                data=parse_excel(blob);fmt='xlsx'
+            else:
+                continue
+            validate(data,old)
+            combined.update(data)
+            sources.append({'url':final,'format':fmt,'periods':len(data),'last':max(data)})
+            print(f'SHF archivo validado: {fmt}; {min(data)} a {max(data)}',flush=True)
+        except Exception as exc:
+            diagnostics.append(f'{url}: {str(exc)[:200]}')
+    if not sources:
+        raise RuntimeError('SHF: ningún anexo pudo validar la fila Nacional. '+' | '.join(diagnostics[-3:]))
+    # Sin borrar historia: solo subir el periodo máximo, con huecos permitidos
+    # pero alertando si la cobertura 2020-actualidad es insuficiente.
+    newest=max(combined)
+    new_periods=[p for p in combined if p>='2020-T1']
+    if len(new_periods)<4:
+        raise RuntimeError('SHF: se requieren al menos 4 observaciones posteriores a 2019; no se publicaron cambios')
+    levels_rows=[(p,round(v,3),'2017=100','SHF · Índice nacional oficial') for p,v in sorted(combined.items())]
+    yoy=[]
+    for p,v in sorted(combined.items()):
+        yr,q=p.split('-T');prev=combined.get(f'{int(yr)-1}-T{q}')
+        if prev is not None and prev>0 and int(yr)>=2016:
+            yoy.append((p,round((v/prev-1)*100,3)))
+    write_csv(LEVEL,['periodo','indice','base','fuente'],levels_rows)
+    write_csv(YOY,['periodo','variacion_anual'],yoy)
+    status={'updated_at_utc':datetime.now(timezone.utc).isoformat(),'status':'ok',
+            'latest_period':newest,'first_period':min(combined),'index_rows':len(combined),
+            'variation_rows':len(yoy),'sources':sources}
+    STATUS.write_text(json.dumps(status,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    print(f'SHF automático: {min(combined)} a {newest}; {len(combined)} índices, {len(yoy)} variaciones anuales',flush=True)
+
+
 if __name__=='__main__':
     try:main()
-    except Exception as e:
-        STATUS.write_text(json.dumps({'updated_at':datetime.now().isoformat(timespec='seconds'),'status':'error','error':str(e)},ensure_ascii=False,indent=2),encoding='utf-8')
-        print(f'ERROR SHF: {e}',file=sys.stderr); sys.exit(1)
+    except Exception as exc:
+        STATUS.write_text(json.dumps({'status':'error','checked_at_utc':datetime.now(timezone.utc).isoformat(),
+                                       'error':str(exc)},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+        print('ERROR SHF:',exc,file=sys.stderr)
+        sys.exit(1)
