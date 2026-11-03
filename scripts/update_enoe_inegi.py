@@ -201,8 +201,33 @@ def fetch_live():
                 'ENOE: sección Coberturas y sexo cargada',
                 flush=True
             )
+            
+            # 4. Seleccionar la cobertura Nacional - Total.
+            nacional = page.locator('#cblgind_nal_0')
 
-            # 4. Seleccionar años desde 2016.
+            if not nacional.is_checked():
+                nacional.check(timeout=30000)
+
+            # Esperar a que ASP.NET procese el cambio.
+            page.wait_for_timeout(1500)
+
+            page.locator('#cblgind_nal_0').wait_for(
+                state='visible',
+                timeout=60000
+            )
+
+            if not page.locator('#cblgind_nal_0').is_checked():
+                raise RuntimeError(
+                    'No se pudo seleccionar Nacional - Total'
+                )
+
+            print(
+                'ENOE: cobertura Nacional - Total seleccionada',
+                flush=True
+            )
+
+            # 4.1. Seleccionar nuevamente los años desde 2016.
+            # Una actualización parcial puede restablecer las casillas.
             selected_years = page.evaluate(
                 SET_CHECKBOXES_JS,
                 {'mode': 'years', 'fromYear': 2016}
@@ -222,7 +247,7 @@ def fetch_live():
                             t['year']
                             for t in selected_years['updated']
                             if t['checked']
-                        ],
+                        ]
                     },
                     ensure_ascii=False
                 ),
@@ -231,12 +256,10 @@ def fetch_live():
 
             if not years_ok:
                 raise RuntimeError(
-                    'No se pudo marcar 2016. Diagnóstico: ' +
-                    json.dumps(
-                        selected_years,
-                        ensure_ascii=False
-                    )[:2500]
+                    'No se pudo marcar 2016 después '
+                    'de seleccionar Nacional - Total'
                 )
+
 
             # Diagnóstico de cobertura, sexo y disponibilidad de Consultar.
             diagnostico = page.evaluate("""() => {
