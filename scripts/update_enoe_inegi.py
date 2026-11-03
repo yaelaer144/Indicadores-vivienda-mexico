@@ -238,8 +238,54 @@ def fetch_live():
                     )[:2500]
                 )
 
-            # 5. Ejecutar la consulta.
-            page.locator('#btngind_con').click(timeout=90000)
+            # Diagnóstico de cobertura, sexo y disponibilidad de Consultar.
+            diagnostico = page.evaluate("""() => {
+                const visibles = Array.from(
+                    document.querySelectorAll(
+                        'input, select, button'
+                    )
+                ).filter(el => el.getClientRects().length > 0);
+
+                return {
+                    consultar: {
+                        disabled: document.querySelector(
+                            '#btngind_con'
+                        )?.disabled
+                    },
+                    controles: visibles.map(el => ({
+                        id: el.id,
+                        name: el.name,
+                        type: el.type,
+                        value: el.value,
+                        checked: el.checked,
+                        disabled: el.disabled,
+                        texto: (
+                            el.closest('label')?.innerText ||
+                            el.parentElement?.innerText ||
+                            ''
+                        ).trim().slice(0, 100)
+                    })).filter(el =>
+                        el.type === 'checkbox' ||
+                        el.type === 'radio' ||
+                        el.type === 'select-one'
+                    )
+                };
+            }""")
+
+            print(
+                'ENOE diagnóstico cobertura: ' +
+                json.dumps(diagnostico, ensure_ascii=False),
+                flush=True
+            )
+
+            if diagnostico['consultar']['disabled']:
+                raise RuntimeError(
+                    'Consultar deshabilitado: revisar cobertura, '
+                    'sexo y trimestres en el diagnóstico anterior'
+                )
+
+            page.locator('#btngind_con').click(timeout=30000)
+
 
             # Esperar a que aparezca la tabla oficial.
             page.locator('#reporte1').wait_for(
