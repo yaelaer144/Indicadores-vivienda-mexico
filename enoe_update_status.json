@@ -1,0 +1,7 @@
+{
+  "checked_at_utc": "2026-11-03T15:28:46.867290+00:00",
+  "source": "INEGI ENOE / Banco de Indicadores",
+  "units": "miles de personas",
+  "updated": false,
+  "error": "No hay IDs candidatos para total; configure INEGI_ID_ENOE_* o compruebe catálogo"
+}
