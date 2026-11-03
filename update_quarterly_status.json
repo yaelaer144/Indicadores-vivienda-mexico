@@ -1,13 +1,7 @@
 {
   "group": "quarterly",
-  "run_at_utc": "2026-11-03T17:56:30.637248+00:00",
+  "run_at_utc": "2026-11-03T18:13:13.171176+00:00",
   "results": [
-    {
-      "script": "update_inegi_series.py",
-      "group": "quarterly",
-      "exit_code": 1,
-      "status": "error"
-    },
     {
       "script": "update_enoe_inegi.py",
       "group": null,
@@ -21,7 +15,5 @@
       "status": "ok"
     }
   ],
-  "failed": [
-    "update_inegi_series.py"
-  ]
+  "failed": []
 }
