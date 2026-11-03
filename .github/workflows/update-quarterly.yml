@@ -19,7 +19,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Instalar dependencias
-        run: python -m pip install openpyxl pypdf
+        run: |
+          python -m pip install openpyxl pypdf beautifulsoup4 playwright==1.56.0
+          python -m playwright install --with-deps chromium
       - name: Ejecutar consultas y registrar fallos
         env:
           INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
