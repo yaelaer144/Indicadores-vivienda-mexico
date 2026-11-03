@@ -122,40 +122,141 @@ SET_CHECKBOXES_JS = r'''({mode, fromYear}) => {
 }'''
 
 
+
 def fetch_live():
     from playwright.sync_api import sync_playwright
+
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+        browser = p.chromium.launch(
+            headless=True,
+            args=['--no-sandbox']
+        )
+
         try:
-            page = browser.new_page(locale='es-MX', viewport={'width': 1600, 'height': 1000})
+            page = browser.new_page(
+                locale='es-MX',
+                viewport={'width': 1600, 'height': 1000}
+            )
             page.set_default_timeout(35000)
-            response = page.goto(URL, wait_until='domcontentloaded', timeout=90000)
+
+            response = page.goto(
+                URL,
+                wait_until='domcontentloaded',
+                timeout=90000
+            )
+
             if response is None or response.status >= 400:
-                raise RuntimeError(f'InfoLaboral no abrió: HTTP {response.status if response else "sin respuesta"}')
+                raise RuntimeError(
+                    f'InfoLaboral no abrió: HTTP '
+                    f'{response.status if response else "sin respuesta"}'
+                )
+
+            # 1. Abrir los indicadores estratégicos.
             page.locator('#btngind').click()
+
+            # 2. Seleccionar variables.
             page.locator('#btngind_ind').click()
-            selected = page.evaluate(SET_CHECKBOXES_JS, {'mode':'variables', 'fromYear':2016})
-            if not any('3.2.' in t['label'] and t['checked'] for t in selected['updated']):
-                raise RuntimeError('No se pudo identificar la casilla de sector de actividad económica')
+
+            # Esperar a que ASP.NET termine de mostrar Variables.
+            page.get_by_text(
+                '3.2. Sector de actividad económica',
+                exact=True
+            ).wait_for(state='visible', timeout=60000)
+
+            selected = page.evaluate(
+                SET_CHECKBOXES_JS,
+                {'mode': 'variables', 'fromYear': 2016}
+            )
+
+            if not any(
+                '3.2.' in t['label'] and t['checked']
+                for t in selected['updated']
+            ):
+                raise RuntimeError(
+                    'No se pudo seleccionar sector de actividad económica'
+                )
+
+            print(
+                'ENOE: variables seleccionadas correctamente',
+                flush=True
+            )
+
+            # 3. Abrir Coberturas y sexo.
             page.locator('#btngind_cob').click()
-            selected_years = page.evaluate(SET_CHECKBOXES_JS, {'mode':'years', 'fromYear':2016})
-            years_ok = any(t['year'] == 2016 and t['checked'] for t in selected_years['updated'])
-            print('ENOE selección de años: ' + json.dumps({
-                'casillas': selected_years['checkboxCount'],
-                'años_detectados': selected_years['yearsFound'],
-                'años_marcados': [t['year'] for t in selected_years['updated'] if t['checked']],
-            }, ensure_ascii=False), flush=True)
+
+            # IMPORTANTE:
+            # InfoLaboral usa ASP.NET UpdatePanel.
+            # Esperar a que termine la actualización parcial.
+            page.get_by_text(
+                'Cobertura temporal',
+                exact=True
+            ).wait_for(state='visible', timeout=60000)
+
+            page.get_by_text(
+                '2016',
+                exact=True
+            ).first.wait_for(state='visible', timeout=60000)
+
+            print(
+                'ENOE: sección Coberturas y sexo cargada',
+                flush=True
+            )
+
+            # 4. Seleccionar años desde 2016.
+            selected_years = page.evaluate(
+                SET_CHECKBOXES_JS,
+                {'mode': 'years', 'fromYear': 2016}
+            )
+
+            years_ok = any(
+                t['year'] == 2016 and t['checked']
+                for t in selected_years['updated']
+            )
+
+            print(
+                'ENOE selección de años: ' + json.dumps(
+                    {
+                        'casillas': selected_years['checkboxCount'],
+                        'años_detectados': selected_years['yearsFound'],
+                        'años_marcados': [
+                            t['year']
+                            for t in selected_years['updated']
+                            if t['checked']
+                        ],
+                    },
+                    ensure_ascii=False
+                ),
+                flush=True
+            )
+
             if not years_ok:
-                raise RuntimeError('No se pudo marcar 2016. Diagnóstico: ' +
-                                   json.dumps(selected_years, ensure_ascii=False)[:2500])
-            # La configuración predeterminada es Nacional / Total / Todos los trimestres / Absolutos.
-            # Verificamos los resultados por estructura, cobertura y controles históricos.
+                raise RuntimeError(
+                    'No se pudo marcar 2016. Diagnóstico: ' +
+                    json.dumps(
+                        selected_years,
+                        ensure_ascii=False
+                    )[:2500]
+                )
+
+            # 5. Ejecutar la consulta.
             page.locator('#btngind_con').click(timeout=90000)
-            page.locator('#reporte1').wait_for(state='attached', timeout=90000)
-            content = page.locator('#reporte1').evaluate('(el) => el.outerHTML')
+
+            # Esperar a que aparezca la tabla oficial.
+            page.locator('#reporte1').wait_for(
+                state='attached',
+                timeout=90000
+            )
+
+            # 6. Extraer directamente la tabla.
+            content = page.locator('#reporte1').evaluate(
+                '(el) => el.outerHTML'
+            )
+
             return parse_table(content)
+
         finally:
             browser.close()
+
 
 
 def main():
