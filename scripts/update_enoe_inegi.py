@@ -1,405 +1,583 @@
 
 #!/usr/bin/env python3
-"""Descarga ENOE desde InfoLaboral usando una sesión nueva de navegador.
+"""Actualización automática ENOE desde INEGI InfoLaboral.
 
-No requiere archivos XLS manuales ni IDs del Banco de Indicadores.
-La tabla HTML 'reporte1' se valida antes de reemplazar el CSV (miles de personas).
-Requiere playwright y beautifulsoup4, instalados en update-quarterly.yml.
+Descarga población ocupada nacional y construcción desde 2016.
+No requiere cargar archivos Excel manualmente.
 """
+
 import csv
 import json
-import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+
 from bs4 import BeautifulSoup
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / 'enoe_construccion_trimestral.csv'
-STATUS = ROOT / 'enoe_update_status.json'
-URL = 'https://www.inegi.org.mx/sistemas/infoenoe/Default_15mas.aspx'
+OUT = ROOT / "enoe_construccion_trimestral.csv"
+STATUS = ROOT / "enoe_update_status.json"
+
+URL = (
+    "https://www.inegi.org.mx/sistemas/"
+    "infoenoe/Default_15mas.aspx"
+)
 
 
 def read_existing():
     if not OUT.exists():
         return []
-    with OUT.open(newline='', encoding='utf-8-sig') as f:
+
+    with OUT.open(
+        newline="",
+        encoding="utf-8-sig"
+    ) as f:
         return list(csv.DictReader(f))
 
 
 def parse_table(html):
-    """Acepta tanto HTML completo como respuesta parcial ASP.NET UpdatePanel."""
-    soup = BeautifulSoup(html, 'html.parser')
-    table = soup.find('table', id='reporte1')
+    """Extrae las series de la tabla oficial reporte1."""
+
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.find("table", id="reporte1")
+
     if table is None:
-        raise ValueError('No se encontró reporte1 en respuesta del INEGI')
-    rows = [[c.get_text(' ', strip=True).replace('\xa0', ' ') for c in tr.find_all(['td','th'], recursive=False)]
-            for tr in table.find_all('tr')]
-    header_idx = next((i for i, cells in enumerate(rows) if cells and cells[0] == 'Indicadores'), None)
+        raise ValueError(
+            "No se encontró reporte1 en la respuesta del INEGI"
+        )
+
+    rows = [
+        [
+            c.get_text(" ", strip=True).replace("\xa0", " ")
+            for c in tr.find_all(
+                ["td", "th"], recursive=False
+            )
+        ]
+        for tr in table.find_all("tr")
+    ]
+
+    header_idx = next(
+        (
+            i for i, cells in enumerate(rows)
+            if cells and cells[0] == "Indicadores"
+        ),
+        None
+    )
+
     if header_idx is None or header_idx + 2 >= len(rows):
-        raise ValueError('Cabeceras de años y trimestres no reconocidas')
-    years, quarters = rows[header_idx], rows[header_idx+1]
-    labels = {"Primer trimestre": 1, "Segundo trimestre": 2, "Tercer trimestre": 3, "Cuarto trimestre": 4}
+        raise ValueError(
+            "Cabeceras de años y trimestres no reconocidas"
+        )
+
+    years = rows[header_idx]
+    quarters = rows[header_idx + 1]
+
+    labels = {
+        "Primer trimestre": 1,
+        "Segundo trimestre": 2,
+        "Tercer trimestre": 3,
+        "Cuarto trimestre": 4
+    }
+
     periods = []
-    for year, quarter in zip(years[1:], quarters[1:]):
-        if not re.fullmatch(r'20\d{2}', year) or quarter not in labels:
-            raise ValueError(f'Cabecera no reconocida: {year!r}, {quarter!r}')
-        periods.append(f'{year}-T{labels[quarter]}')
-    if len(set(periods)) != len(periods) or periods != sorted(periods):
-        raise ValueError('Los trimestres están repetidos o desordenados')
+
+    for year, quarter in zip(
+        years[1:], quarters[1:]
+    ):
+        if (
+            not re.fullmatch(r"20\d{2}", year)
+            or quarter not in labels
+        ):
+            raise ValueError(
+                f"Cabecera no reconocida: {year}, {quarter}"
+            )
+
+        periods.append(
+            f"{year}-T{labels[quarter]}"
+        )
+
+    if (
+        len(set(periods)) != len(periods)
+        or periods != sorted(periods)
+    ):
+        raise ValueError(
+            "Trimestres repetidos o desordenados"
+        )
 
     def find_row(label):
-        matches = [r for r in rows[header_idx+3:] if len(r) == len(periods)+1 and r[0].strip() == label]
+        matches = [
+            r for r in rows[header_idx + 3:]
+            if (
+                len(r) == len(periods) + 1
+                and r[0].strip() == label
+            )
+        ]
+
         if len(matches) != 1:
-            raise ValueError(f'Se esperó una sola fila {label}: {len(matches)}')
+            raise ValueError(
+                f"Fila {label}: "
+                f"se encontraron {len(matches)} coincidencias"
+            )
+
         values = {}
-        for p, value in zip(periods, matches[0][1:]):
-            n = value.replace(',', '').replace(' ', '')
-            if not re.fullmatch(r'\d+', n):
-                raise ValueError(f'Valor ENOE no numérico: {label} {p} = {value!r}')
-            values[p] = int(n)
+
+        for period, value in zip(
+            periods, matches[0][1:]
+        ):
+            n = value.replace(",", "").replace(" ", "")
+
+            if not re.fullmatch(r"\d+", n):
+                raise ValueError(
+                    f"Valor no numérico: "
+                    f"{label} {period} = {value}"
+                )
+
+            values[period] = int(n)
+
         return values
 
-    national = find_row('Población ocupada')
-    construction = find_row('Construcción')
-    if len(periods) < 35 or periods[0] != '2016-T1' or '2020-T2' in periods:
-        raise ValueError('La consulta no cubre 2016 o incluye incorrectamente 2020-T2')
-    for p in periods:
-        if not 30_000_000 <= national[p] <= 100_000_000:
-            raise ValueError(f'Población ocupada nacional fuera de rango en {p}')
-        if not 1_000_000 <= construction[p] <= 12_000_000 or construction[p] >= national[p]:
-            raise ValueError(f'Construcción fuera de rango en {p}')
-    if national['2016-T1'] != 50_029_049 or construction['2016-T1'] != 4_074_858:
-        raise ValueError('No coincide con valores de control 2016-T1')
-    return [{ 'periodo': p, 'total': f'{construction[p]/1000:.3f}',
-              'ocupada_total': f'{national[p]/1000:.3f}', 'formal': '', 'informal': '' }
-            for p in periods]
+    national = find_row("Población ocupada")
+    construction = find_row("Construcción")
+
+    if (
+        len(periods) < 35
+        or periods[0] != "2016-T1"
+        or "2020-T2" in periods
+    ):
+        raise ValueError(
+            "La consulta no cubre correctamente "
+            "los trimestres desde 2016"
+        )
+
+    for period in periods:
+        if not (
+            30_000_000 <= national[period] <= 100_000_000
+        ):
+            raise ValueError(
+                f"Población nacional fuera de rango: {period}"
+            )
+
+        if not (
+            1_000_000 <= construction[period] <= 12_000_000
+        ):
+            raise ValueError(
+                f"Construcción fuera de rango: {period}"
+            )
+
+        if construction[period] >= national[period]:
+            raise ValueError(
+                f"Construcción supera población nacional: {period}"
+            )
+
+    if (
+        national["2016-T1"] != 50_029_049
+        or construction["2016-T1"] != 4_074_858
+    ):
+        raise ValueError(
+            "No coinciden los valores de control de 2016-T1"
+        )
+
+    return [
+        {
+            "periodo": period,
+            "total": f"{construction[period] / 1000:.3f}",
+            "ocupada_total": f"{national[period] / 1000:.3f}",
+            "formal": "",
+            "informal": ""
+        }
+        for period in periods
+    ]
 
 
-# Función sin dependencias de selectores ASP.NET variables.
-# La página usa <label for="id"> o input + texto dentro de una celda.
 SET_CHECKBOXES_JS = r'''({mode, fromYear}) => {
-  const normalize = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
-  const inputs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
-  const getLabel = el => {
-    const associated = Array.from(document.querySelectorAll('label[for]')).find(l => l.htmlFor === el.id);
-    if (associated && associated.textContent.trim()) return normalize(associated.textContent);
-    let node = el.nextSibling;
-    for (let i=0; node && i<5; i++,node=node.nextSibling) {
-      if (node.textContent && node.textContent.trim()) return normalize(node.textContent);
+
+    const normalize = s =>
+        (s || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
+    const inputs = Array.from(
+        document.querySelectorAll('input[type="checkbox"]')
+    );
+
+    const getLabel = el => {
+
+        const associated = Array.from(
+            document.querySelectorAll("label[for]")
+        ).find(l => l.htmlFor === el.id);
+
+        if (
+            associated
+            && associated.textContent.trim()
+        ) {
+            return normalize(associated.textContent);
+        }
+
+        let node = el.nextSibling;
+
+        for (
+            let i = 0;
+            node && i < 5;
+            i++, node = node.nextSibling
+        ) {
+            if (
+                node.textContent
+                && node.textContent.trim()
+            ) {
+                return normalize(node.textContent);
+            }
+        }
+
+        return normalize(
+            el.parentElement?.textContent || ""
+        );
+    };
+
+    const updated = [];
+    const found = [];
+
+    for (const el of inputs) {
+
+        const label = getLabel(el);
+        const value = (el.value || "").trim();
+
+        let desired = null;
+        let year = null;
+
+        if (mode === "variables") {
+
+            if (
+                /^3\.2\. sector de actividad economica/.test(label)
+            ) {
+                desired = true;
+            }
+
+            if (/^poblacion ocupada$/.test(label)) {
+                desired = true;
+            }
+
+            if (
+                /^3\.1\. posicion en la ocupacion/.test(label)
+            ) {
+                desired = false;
+            }
+
+        } else if (mode === "years") {
+
+            const fromValue = /^20\d{2}$/.test(value)
+                ? Number(value) : null;
+
+            const fromLabel = /^20\d{2}$/.test(label)
+                ? Number(label) : null;
+
+            year = fromValue !== null
+                ? fromValue : fromLabel;
+
+            if (
+                year !== null
+                && year >= 2005
+                && year <= 2099
+            ) {
+                desired = year >= fromYear;
+            }
+        }
+
+        if (desired !== null) {
+
+            if (el.checked !== desired) {
+
+                el.checked = desired;
+
+                el.dispatchEvent(
+                    new Event("input", {bubbles: true})
+                );
+
+                el.dispatchEvent(
+                    new Event("change", {bubbles: true})
+                );
+            }
+
+            updated.push({
+                label,
+                value,
+                year,
+                checked: el.checked,
+                desired,
+                id: el.id
+            });
+        }
+
+        if (
+            mode === "years"
+            && year !== null
+        ) {
+            found.push(year);
+        }
     }
-    return normalize(el.parentElement?.textContent || '');
-  };
-  const updated = [];
-  const found = [];
-  for (const el of inputs) {
-    const label = getLabel(el);
-    const value = (el.value || '').trim();
-    let desired = null;
-    let year = null;
-    if (mode === 'variables') {
-      if (/^3\.2\. sector de actividad economica/.test(label)) desired = true;
-      if (/^poblacion ocupada$/.test(label)) desired = true;
-      if (/^3\.1\. posicion en la ocupacion/.test(label)) desired = false;
-    } else if (mode === 'years') {
-      // ASP.NET puede presentar los años en el atributo value SIN texto de etiqueta.
-      const fromValue = /^20\d{2}$/.test(value) ? Number(value) : null;
-      const fromLabel = /^20\d{2}$/.test(label) ? Number(label) : null;
-      year = fromValue !== null ? fromValue : fromLabel;
-      if (year !== null && year >= 2005 && year <= 2099) desired = year >= fromYear;
-    }
-    if (desired !== null) {
-      if (el.checked !== desired) {
-        el.checked = desired;
-        el.dispatchEvent(new Event('input', {bubbles:true}));
-        el.dispatchEvent(new Event('change', {bubbles:true}));
-      }
-      updated.push({label, value, year, checked:el.checked, desired, id:el.id});
-    }
-    if (mode === 'years' && year !== null) found.push(year);
-  }
-  return {updated, yearsFound: found, checkboxCount: inputs.length};
+
+    return {
+        updated,
+        yearsFound: found,
+        checkboxCount: inputs.length
+    };
 }'''
 
 
-
 def fetch_live():
+    """Consulta InfoLaboral mediante Playwright."""
+
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
+
         browser = p.chromium.launch(
             headless=True,
-            args=['--no-sandbox']
+            args=["--no-sandbox"]
         )
 
         try:
             page = browser.new_page(
-                locale='es-MX',
-                viewport={'width': 1600, 'height': 1000}
+                locale="es-MX",
+                viewport={
+                    "width": 1600,
+                    "height": 1000
+                }
             )
+
             page.set_default_timeout(35000)
 
             response = page.goto(
                 URL,
-                wait_until='domcontentloaded',
+                wait_until="domcontentloaded",
                 timeout=90000
             )
 
-            if response is None or response.status >= 400:
+            if (
+                response is None
+                or response.status >= 400
+            ):
                 raise RuntimeError(
-                    f'InfoLaboral no abrió: HTTP '
-                    f'{response.status if response else "sin respuesta"}'
+                    "InfoLaboral no abrió correctamente"
                 )
 
-            # 1. Abrir los indicadores estratégicos.
-            page.locator('#btngind').click()
+            # 1. Abrir Indicadores estratégicos.
+            page.locator("#btngind").click()
 
             # 2. Seleccionar variables.
-            page.locator('#btngind_ind').click()
+            page.locator("#btngind_ind").click()
 
-            # Esperar a que ASP.NET termine de mostrar Variables.
             page.get_by_text(
-                '3.2. Sector de actividad económica',
+                "3.2. Sector de actividad económica",
                 exact=True
-            ).wait_for(state='visible', timeout=60000)
+            ).wait_for(
+                state="visible",
+                timeout=60000
+            )
 
-            selected = page.evaluate(
+            variables = page.evaluate(
                 SET_CHECKBOXES_JS,
-                {'mode': 'variables', 'fromYear': 2016}
+                {
+                    "mode": "variables",
+                    "fromYear": 2016
+                }
             )
 
             if not any(
-                '3.2.' in t['label'] and t['checked']
-                for t in selected['updated']
+                "3.2." in x["label"] and x["checked"]
+                for x in variables["updated"]
             ):
                 raise RuntimeError(
-                    'No se pudo seleccionar sector de actividad económica'
+                    "No se seleccionó el sector construcción"
                 )
 
             print(
-                'ENOE: variables seleccionadas correctamente',
+                "ENOE: variables seleccionadas",
                 flush=True
             )
 
             # 3. Abrir Coberturas y sexo.
-            page.locator('#btngind_cob').click()
+            page.locator("#btngind_cob").click()
 
-            # IMPORTANTE:
-            # InfoLaboral usa ASP.NET UpdatePanel.
-            # Esperar a que termine la actualización parcial.
-            page.get_by_text(
-                'Cobertura temporal',
-                exact=True
-            ).wait_for(state='visible', timeout=60000)
-
-            page.get_by_text(
-                '2016',
-                exact=True
-            ).first.wait_for(state='visible', timeout=60000)
-
-            print(
-                'ENOE: sección Coberturas y sexo cargada',
-                flush=True
+            page.locator(
+                "#cblgind_ano_11"
+            ).wait_for(
+                state="visible",
+                timeout=60000
             )
-            
-            # 4. Seleccionar la cobertura Nacional - Total.
-            nacional = page.locator('#cblgind_nal_0')
+
+            # 4. Nacional - Total.
+            nacional = page.locator(
+                "#cblgind_nal_0"
+            )
 
             if not nacional.is_checked():
                 nacional.check(timeout=30000)
 
-            # Esperar a que ASP.NET procese el cambio.
-            page.wait_for_timeout(1500)
-
-            page.locator('#cblgind_nal_0').wait_for(
-                state='visible',
-                timeout=60000
-            )
-
-            if not page.locator('#cblgind_nal_0').is_checked():
-                raise RuntimeError(
-                    'No se pudo seleccionar Nacional - Total'
-                )
-
             print(
-                'ENOE: cobertura Nacional - Total seleccionada',
+                "ENOE: Nacional - Total seleccionado",
                 flush=True
             )
 
-            # 4.1. Seleccionar nuevamente los años desde 2016.
-            # Una actualización parcial puede restablecer las casillas.
-            selected_years = page.evaluate(
+            # 5. Seleccionar años desde 2016.
+            seleccion = page.evaluate(
                 SET_CHECKBOXES_JS,
-                {'mode': 'years', 'fromYear': 2016}
+                {
+                    "mode": "years",
+                    "fromYear": 2016
+                }
             )
 
-            years_ok = any(
-                t['year'] == 2016 and t['checked']
-                for t in selected_years['updated']
-            )
+            marcados = [
+                x["year"]
+                for x in seleccion["updated"]
+                if x["checked"]
+            ]
+
+            if 2016 not in marcados:
+                raise RuntimeError(
+                    "No se pudo seleccionar 2016"
+                )
 
             print(
-                'ENOE selección de años: ' + json.dumps(
-                    {
-                        'casillas': selected_years['checkboxCount'],
-                        'años_detectados': selected_years['yearsFound'],
-                        'años_marcados': [
-                            t['year']
-                            for t in selected_years['updated']
-                            if t['checked']
-                        ]
-                    },
+                "ENOE años seleccionados: "
+                + json.dumps(marcados),
+                flush=True
+            )
+
+            # 6. Seleccionar los cuatro trimestres.
+            # Usamos interacciones reales con Playwright.
+            print(
+                "ENOE: seleccionando cuatro trimestres",
+                flush=True
+            )
+
+            page.locator(
+                "#cblgind_tri_0"
+            ).wait_for(
+                state="visible",
+                timeout=30000
+            )
+
+            for i in range(4):
+
+                casilla = page.locator(
+                    f"#cblgind_tri_{i}"
+                )
+
+                if not casilla.is_checked():
+                    casilla.check(timeout=30000)
+
+                if not casilla.is_checked():
+                    raise RuntimeError(
+                        f"No se pudo seleccionar trimestre {i + 1}"
+                    )
+
+            # 7. Validar todas las selecciones.
+            estado = page.evaluate("""() => ({
+                nacional: !!document.querySelector(
+                    '#cblgind_nal_0'
+                )?.checked,
+
+                sexoTotal: !!document.querySelector(
+                    '#rblgind_sex_0'
+                )?.checked,
+
+                absolutos: !!document.querySelector(
+                    '#rblabs_rel_0'
+                )?.checked,
+
+                anio2016: !!document.querySelector(
+                    '#cblgind_ano_11'
+                )?.checked,
+
+                trimestres: [0,1,2,3].map(i =>
+                    !!document.querySelector(
+                        '#cblgind_tri_' + i
+                    )?.checked
+                ),
+
+                consultarHabilitado: !document.querySelector(
+                    '#btngind_con'
+                )?.disabled
+            })""")
+
+            print(
+                "ENOE selección final: "
+                + json.dumps(
+                    estado,
                     ensure_ascii=False
                 ),
                 flush=True
             )
 
-            if not years_ok:
+            if not all([
+                estado["nacional"],
+                estado["sexoTotal"],
+                estado["absolutos"],
+                estado["anio2016"],
+                *estado["trimestres"]
+            ]):
                 raise RuntimeError(
-                    'No se pudo marcar 2016 después '
-                    'de seleccionar Nacional - Total'
-                )
-            
-            # 4.2. Registrar los años mediante una interacción real.
-            # Los cambios realizados con evaluate() pueden no provocar
-            # la actualización del formulario ASP.NET.
-
-            print(
-                'ENOE: registrando selección temporal en ASP.NET',
-                flush=True
-            )
-
-            anio_2016 = page.locator('#cblgind_ano_11')
-
-            # El año 2016 ya debe estar marcado.
-            if not anio_2016.is_checked():
-                raise RuntimeError(
-                    'Se perdió la selección de 2016'
-                )
-
-            # Provocar un cambio real utilizando Playwright.
-            anio_2016.uncheck(timeout=30000)
-            anio_2016.check(timeout=30000)
-
-            # Esperar a que concluyan los cambios de ASP.NET.
-            page.wait_for_timeout(1200)
-
-            # Comprobar si hay controles de trimestres.
-            temporal = page.evaluate("""() => {
-                const inputs = Array.from(
-                    document.querySelectorAll('input, select')
-                );
-
-                return {
-                    anio2016: document.querySelector(
-                        '#cblgind_ano_11'
-                    )?.checked,
-                    nacional: document.querySelector(
-                        '#cblgind_nal_0'
-                    )?.checked,
-                    consultarHabilitado: !document.querySelector(
-                        '#btngind_con'
-                    )?.disabled,
-                    controlesTemporales: inputs.filter(el => {
-                        const id = (el.id || '').toLowerCase();
-                        const name = (el.name || '').toLowerCase();
-
-                        return /tri|trimestre|period/.test(
-                            id + ' ' + name
-                        );
-                    }).map(el => ({
-                        id: el.id,
-                        name: el.name,
-                        type: el.type,
-                        value: el.value,
-                        checked: el.checked,
-                        disabled: el.disabled
-                    }))
-                };
-            }""")
-
-            print(
-                'ENOE estado temporal: ' +
-                json.dumps(temporal, ensure_ascii=False),
-                flush=True
-            )
-
-            if not temporal['anio2016']:
-                raise RuntimeError(
-                    'ASP.NET no conservó el año 2016'
-                )
-
-            if not temporal['nacional']:
-                raise RuntimeError(
-                    'ASP.NET no conservó Nacional - Total'
-                )
-
-            if not temporal['consultarHabilitado']:
-                raise RuntimeError(
-                    'El servidor aún no habilita Consultar. '
-                    'Revisar los controles temporales registrados.'
-                )
-
-
-
-            # Diagnóstico de cobertura, sexo y disponibilidad de Consultar.
-            diagnostico = page.evaluate("""() => {
-                const visibles = Array.from(
-                    document.querySelectorAll(
-                        'input, select, button'
+                    "InfoLaboral no conservó todas "
+                    "las selecciones: "
+                    + json.dumps(
+                        estado,
+                        ensure_ascii=False
                     )
-                ).filter(el => el.getClientRects().length > 0);
+                )
 
-                return {
-                    consultar: {
-                        disabled: document.querySelector(
-                            '#btngind_con'
-                        )?.disabled
-                    },
-                    controles: visibles.map(el => ({
-                        id: el.id,
-                        name: el.name,
-                        type: el.type,
-                        value: el.value,
-                        checked: el.checked,
-                        disabled: el.disabled,
-                        texto: (
-                            el.closest('label')?.innerText ||
-                            el.parentElement?.innerText ||
-                            ''
-                        ).trim().slice(0, 100)
-                    })).filter(el =>
-                        el.type === 'checkbox' ||
-                        el.type === 'radio' ||
-                        el.type === 'select-one'
+            # 8. Esperar a que Consultar esté habilitado.
+            if not estado["consultarHabilitado"]:
+
+                try:
+                    page.wait_for_function(
+                        """() => {
+                            const boton = document.querySelector(
+                                '#btngind_con'
+                            );
+                            return boton && !boton.disabled;
+                        }""",
+                        timeout=10000
                     )
-                };
-            }""")
 
+                except Exception:
+                    raise RuntimeError(
+                        "Consultar continúa deshabilitado "
+                        "con cobertura, años y trimestres "
+                        "seleccionados: "
+                        + json.dumps(
+                            estado,
+                            ensure_ascii=False
+                        )
+                    )
+
+            # 9. Ejecutar la consulta.
             print(
-                'ENOE diagnóstico cobertura: ' +
-                json.dumps(diagnostico, ensure_ascii=False),
+                "ENOE: ejecutando consulta InfoLaboral",
                 flush=True
             )
 
-            if diagnostico['consultar']['disabled']:
-                raise RuntimeError(
-                    'Consultar deshabilitado: revisar cobertura, '
-                    'sexo y trimestres en el diagnóstico anterior'
-                )
+            page.locator(
+                "#btngind_con"
+            ).click(
+                timeout=30000
+            )
 
-            page.locator('#btngind_con').click(timeout=30000)
-
-
-            # Esperar a que aparezca la tabla oficial.
-            page.locator('#reporte1').wait_for(
-                state='attached',
+            # 10. Esperar la tabla oficial.
+            page.locator(
+                "#reporte1"
+            ).wait_for(
+                state="attached",
                 timeout=90000
             )
 
-            # 6. Extraer directamente la tabla.
-            content = page.locator('#reporte1').evaluate(
-                '(el) => el.outerHTML'
+            content = page.locator(
+                "#reporte1"
+            ).evaluate(
+                "(el) => el.outerHTML"
             )
 
             return parse_table(content)
@@ -408,40 +586,122 @@ def fetch_live():
             browser.close()
 
 
-
 def main():
-    status = {'checked_at_utc': datetime.now(timezone.utc).isoformat(),
-              'source': 'INEGI ENOE InfoLaboral (consulta automática HTML)',
-              'units': 'miles de personas', 'updated': False}
+
+    status = {
+        "checked_at_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+        "source": (
+            "INEGI ENOE InfoLaboral "
+            "(consulta automática HTML)"
+        ),
+        "units": "miles de personas",
+        "updated": False
+    }
+
     try:
         rows = fetch_live()
         previous = read_existing()
-        last_old = max((r.get('periodo','') for r in previous), default='')
-        if rows[-1]['periodo'] < last_old:
-            raise ValueError(f'Fuente retrocedió de {last_old} a {rows[-1]["periodo"]}')
-        # No convertir una posible caída del sitio en un borrado de los datos existentes.
-        old_map = {r['periodo']:r for r in previous}
+
+        last_old = max(
+            (
+                r.get("periodo", "")
+                for r in previous
+            ),
+            default=""
+        )
+
+        if rows[-1]["periodo"] < last_old:
+            raise ValueError(
+                "Fuente retrocedió de "
+                f"{last_old} a {rows[-1]['periodo']}"
+            )
+
+        old_map = {
+            r["periodo"]: r
+            for r in previous
+        }
+
+        # Conservar columnas históricas adicionales.
         for row in rows:
-            old = old_map.get(row['periodo'])
+
+            old = old_map.get(
+                row["periodo"]
+            )
+
             if old:
-                for field in ('formal', 'informal'):
-                    row[field] = old.get(field,'')
-        tmp = OUT.with_suffix('.csv.tmp')
-        with tmp.open('w', encoding='utf-8-sig', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['periodo','total','ocupada_total','formal','informal'])
+                for field in (
+                    "formal",
+                    "informal"
+                ):
+                    row[field] = old.get(
+                        field, ""
+                    )
+
+        tmp = OUT.with_suffix(
+            ".csv.tmp"
+        )
+
+        with tmp.open(
+            "w",
+            encoding="utf-8-sig",
+            newline=""
+        ) as f:
+
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[
+                    "periodo",
+                    "total",
+                    "ocupada_total",
+                    "formal",
+                    "informal"
+                ]
+            )
+
             writer.writeheader()
             writer.writerows(rows)
+
         tmp.replace(OUT)
-        status.update(updated=True, first_quarter=rows[0]['periodo'], last_quarter=rows[-1]['periodo'],
-                      observations=len(rows), gap_2020_T2=True)
-        print(f'ENOE automática: {rows[0]["periodo"]} a {rows[-1]["periodo"]}; {len(rows)} observaciones')
+
+        status.update(
+            updated=True,
+            first_quarter=rows[0]["periodo"],
+            last_quarter=rows[-1]["periodo"],
+            observations=len(rows),
+            gap_2020_T2=True
+        )
+
+        print(
+            "ENOE automática: "
+            f"{rows[0]['periodo']} "
+            f"a {rows[-1]['periodo']}; "
+            f"{len(rows)} observaciones",
+            flush=True
+        )
+
     except Exception as exc:
-        status['error'] = str(exc)
-        print(f'ERROR ENOE InfoLaboral: {exc}', flush=True)
+
+        status["error"] = str(exc)
+
+        print(
+            f"ERROR ENOE InfoLaboral: {exc}",
+            flush=True
+        )
+
         raise
+
     finally:
-        STATUS.write_text(json.dumps(status, ensure_ascii=False, indent=2)+'\n',encoding='utf-8')
+        STATUS.write_text(
+            json.dumps(
+                status,
+                ensure_ascii=False,
+                indent=2
+            ) + "\n",
+            encoding="utf-8"
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
