@@ -259,6 +259,87 @@ def fetch_live():
                     'No se pudo marcar 2016 después '
                     'de seleccionar Nacional - Total'
                 )
+            
+            # 4.2. Registrar los años mediante una interacción real.
+            # Los cambios realizados con evaluate() pueden no provocar
+            # la actualización del formulario ASP.NET.
+
+            print(
+                'ENOE: registrando selección temporal en ASP.NET',
+                flush=True
+            )
+
+            anio_2016 = page.locator('#cblgind_ano_11')
+
+            # El año 2016 ya debe estar marcado.
+            if not anio_2016.is_checked():
+                raise RuntimeError(
+                    'Se perdió la selección de 2016'
+                )
+
+            # Provocar un cambio real utilizando Playwright.
+            anio_2016.uncheck(timeout=30000)
+            anio_2016.check(timeout=30000)
+
+            # Esperar a que concluyan los cambios de ASP.NET.
+            page.wait_for_timeout(1200)
+
+            # Comprobar si hay controles de trimestres.
+            temporal = page.evaluate("""() => {
+                const inputs = Array.from(
+                    document.querySelectorAll('input, select')
+                );
+
+                return {
+                    anio2016: document.querySelector(
+                        '#cblgind_ano_11'
+                    )?.checked,
+                    nacional: document.querySelector(
+                        '#cblgind_nal_0'
+                    )?.checked,
+                    consultarHabilitado: !document.querySelector(
+                        '#btngind_con'
+                    )?.disabled,
+                    controlesTemporales: inputs.filter(el => {
+                        const id = (el.id || '').toLowerCase();
+                        const name = (el.name || '').toLowerCase();
+
+                        return /tri|trimestre|period/.test(
+                            id + ' ' + name
+                        );
+                    }).map(el => ({
+                        id: el.id,
+                        name: el.name,
+                        type: el.type,
+                        value: el.value,
+                        checked: el.checked,
+                        disabled: el.disabled
+                    }))
+                };
+            }""")
+
+            print(
+                'ENOE estado temporal: ' +
+                json.dumps(temporal, ensure_ascii=False),
+                flush=True
+            )
+
+            if not temporal['anio2016']:
+                raise RuntimeError(
+                    'ASP.NET no conservó el año 2016'
+                )
+
+            if not temporal['nacional']:
+                raise RuntimeError(
+                    'ASP.NET no conservó Nacional - Total'
+                )
+
+            if not temporal['consultarHabilitado']:
+                raise RuntimeError(
+                    'El servidor aún no habilita Consultar. '
+                    'Revisar los controles temporales registrados.'
+                )
+
 
 
             # Diagnóstico de cobertura, sexo y disponibilidad de Consultar.
