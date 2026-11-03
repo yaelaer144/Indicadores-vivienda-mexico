@@ -193,26 +193,23 @@ def official_links(page_html, base):
 
 
 
-def parse_excel(blob):
-    """Lee Excel SHF horizontal, vertical o con encabezados fusionados.
 
-    Si los encabezados no permiten asignar los periodos, utiliza
-    coincidencias verificadas con el índice histórico nacional.
+def parse_excel(blob):
+    """Extrae SHF de bloques verticales trimestrales.
+
+    Reconoce filas Nacional repetidas y determina la columna,
+    periodo inicial y orden con controles históricos oficiales.
     """
     import openpyxl
+    from collections import Counter
 
     wb = openpyxl.load_workbook(
         io.BytesIO(blob),
-        data_only=True,
-        read_only=False
+        read_only=True,
+        data_only=True
     )
 
-    candidates = []
-    diagnostics = []
-
     anchors = dict(SEED)
-
-    # Valores de control oficiales de 2025 y 2026.
     anchors.update({
         "2025-T1": 186.9,
         "2025-T2": 191.9,
@@ -222,325 +219,189 @@ def parse_excel(blob):
         "2026-T2": 205.9,
     })
 
-    def num(value):
+    def number(value):
         if isinstance(value, bool) or value is None:
             return None
 
         try:
-            v = float(
-                str(value).replace(",", "").strip()
-            )
-
-            return v if 50 <= v <= 700 else None
-
-        except (TypeError, ValueError):
+            n = float(str(value).strip().replace(",", ""))
+        except (ValueError, TypeError):
             return None
 
-    def year(value):
-        s = str(value or "").strip()
+        return round(n, 3) if 50 <= n <= 700 else None
 
-        match = re.fullmatch(
-            r"(20(?:0\d|1\d|2\d|3\d))(?:\.0)?",
-            s
-        )
+    def from_index(index):
+        year = index // 4
+        quarter = index % 4 + 1
+        return f"{year}-T{quarter}"
 
-        return int(match.group(1)) if match else None
-
-    def periods_between(start, n):
-        y, q = map(
-            int,
-            start.replace("-T", "-").split("-")
-        )
-
-        output = []
-
-        for _ in range(n):
-            output.append(f"{y}-T{q}")
-            q += 1
-
-            if q == 5:
-                q = 1
-                y += 1
-
-        return output
-
-    def put(candidate, method, sheet):
-        if len(candidate) < 6:
-            return
-
-        overlaps = [
-            p for p in candidate
-            if p in anchors
-        ]
-
-        matching = [
-            p for p in overlaps
-            if abs(candidate[p] - anchors[p]) <= 0.17
-        ]
-
-        if overlaps:
-            if len(matching) / len(overlaps) < 0.8:
-                return
-
-        ordered = [
-            candidate[p]
-            for p in sorted(candidate)
-        ]
-
-        # Proteger contra series de otra base o mal alineadas.
-        if any(
-            b < a - 3
-            for a, b in zip(
-                ordered, ordered[1:]
-            )
-        ):
-            return
-
-        candidates.append((
-            len(matching),
-            len(candidate),
-            max(candidate),
-            candidate,
-            method,
-            sheet
-        ))
+    candidates = []
+    diagnostics = []
 
     for ws in wb.worksheets:
-        rows = [
-            list(r)
-            for r in ws.iter_rows(
-                values_only=True
-            )
+        national = []
+
+        for rownum, row in enumerate(
+            ws.iter_rows(values_only=True),
+            start=1
+        ):
+            values = list(row)
+
+            if any(
+                normal(v).startswith("nacional")
+                for v in values
+            ):
+                national.append((rownum, values))
+
+        positions = [r[0] for r in national]
+
+        distances = [
+            b - a
+            for a, b in zip(positions, positions[1:])
         ]
 
-        locations = []
-
-        for i, row in enumerate(rows):
-            for j, value in enumerate(row):
-                if re.match(
-                    r"^nacional(?:\b|\d|\s|\*)",
-                    normal(value)
-                ):
-                    locations.append((i, j))
-
-        diagnostics.append(
-            f"{ws.title}: "
-            f"{ws.max_row}x{ws.max_column}, "
-            f"nacional={locations[:5]}"
+        stride, frequency = (
+            Counter(distances).most_common(1)[0]
+            if distances else (0, 0)
         )
 
-        for i, j in locations:
+        diagnosis = (
+            f"{ws.title}: {ws.max_row}x{ws.max_column}; "
+            f"Nacional={len(national)}; "
+            f"primeros={positions[:5]}; "
+            f"paso={stride} ({frequency} repeticiones)"
+        )
 
-            # A. Tabla horizontal con fila Nacional.
-            series = [
-                (c, num(v))
-                for c, v in enumerate(
-                    rows[i][j + 1:],
-                    j + 1
-                )
-            ]
+        diagnostics.append(diagnosis)
 
-            series = [
-                (c, v)
-                for c, v in series
-                if v is not None
-            ]
+        print(
+            "SHF estructura: " + diagnosis,
+            flush=True
+        )
 
-            # Buscar encabezados de año y trimestre.
-            for h in range(max(0, i - 15), i):
-                years = [
-                    (c, year(v))
-                    for c, v in enumerate(rows[h])
-                    if year(v)
-                ]
+        if len(national) < 8:
+            continue
 
-                if not years:
-                    continue
-
-                for k in range(h + 1, i):
-                    qs = {
-                        c: quarter(v)
-                        for c, v in enumerate(rows[k])
-                        if quarter(v)
-                    }
-
-                    if len(qs) < 4:
-                        continue
-
-                    aligned = {}
-
-                    for c, v in series:
-                        if c not in qs:
-                            continue
-
-                        prev = [
-                            yr
-                            for pos, yr in years
-                            if pos <= c
-                        ]
-
-                        if prev:
-                            aligned[
-                                f"{prev[-1]}-T{qs[c]}"
-                            ] = v
-
-                    put(
-                        aligned,
-                        "encabezados",
-                        ws.title
-                    )
-
-            # B. Alineación mediante valores históricos.
-            # Útil cuando los encabezados están fusionados.
+        # Examinar las columnas de las filas Nacional.
+        for col in range(ws.max_column):
             values = [
-                v for _, v in series
+                number(row[col])
+                if col < len(row)
+                else None
+                for _, row in national
             ]
 
-            if len(values) >= 6:
-                best = []
+            if sum(v is not None for v in values) < 8:
+                continue
 
-                for sy in range(2005, 2027):
-                    for sq in range(1, 5):
+            # Determinar el periodo inicial y el orden
+            # mediante coincidencias históricas verificadas.
+            for direction in (1, -1):
+                for start_year in range(2000, 2027):
+                    for start_quarter in range(1, 5):
 
-                        ps = periods_between(
-                            f"{sy}-T{sq}",
-                            len(values)
+                        start = (
+                            start_year * 4
+                            + start_quarter - 1
                         )
 
-                        matches = [
-                            p
-                            for p, v in zip(ps, values)
+                        series = {
+                            from_index(start + direction * i): v
+                            for i, v in enumerate(values)
                             if (
-                                p in anchors
-                                and abs(
-                                    v - anchors[p]
-                                ) <= 0.17
+                                v is not None
+                                and start + direction * i >= 0
                             )
+                        }
+
+                        shared = [
+                            p for p in series
+                            if p in anchors
+                        ]
+
+                        matched = [
+                            p for p in shared
+                            if abs(
+                                series[p] - anchors[p]
+                            ) <= 0.17
                         ]
 
                         conflicts = [
-                            p
-                            for p, v in zip(ps, values)
-                            if (
-                                p in anchors
-                                and abs(
-                                    v - anchors[p]
-                                ) > 0.17
-                            )
+                            p for p in shared
+                            if abs(
+                                series[p] - anchors[p]
+                            ) > 0.17
                         ]
 
-                        if (
-                            len(matches) >= 3
-                            and not conflicts
-                        ):
-                            best.append((
-                                len(matches),
-                                sy,
-                                sq,
-                                ps
-                            ))
-
-                if best:
-                    best.sort(reverse=True)
-
-                    count, sy, sq, ps = best[0]
-
-                    if (
-                        len(best) == 1
-                        or count > best[1][0]
-                    ):
-                        put(
-                            dict(zip(ps, values)),
-                            "anclajes",
-                            ws.title
-                        )
-
-            # C. Formato vertical:
-            # columnas Año, Trimestre e índice Nacional.
-            if len(rows) > i + 6:
-
-                header = [
-                    normal(v)
-                    for v in rows[i]
-                ]
-
-                for yr_col in range(len(header)):
-                    if not any(
-                        word in header[yr_col]
-                        for word in ("ano", "year")
-                    ):
-                        continue
-
-                    for q_col in range(len(header)):
-                        if (
-                            "trimestre" not in header[q_col]
-                            and "quarter" not in header[q_col]
-                        ):
+                        if conflicts or len(matched) < 5:
                             continue
 
-                        found = {}
+                        if len({
+                            p[:4] for p in matched
+                        }) < 3:
+                            continue
 
-                        for row in rows[i + 1:]:
-                            if max(
-                                j, yr_col, q_col
-                            ) >= len(row):
-                                continue
+                        cleaned = {
+                            p: v
+                            for p, v in series.items()
+                            if p >= "2015-T1"
+                        }
 
-                            y = year(row[yr_col])
-                            q = quarter(row[q_col])
-                            v = num(row[j])
+                        if len(cleaned) < 20:
+                            continue
 
-                            if (
-                                y
-                                and q
-                                and v is not None
-                            ):
-                                found[
-                                    f"{y}-T{q}"
-                                ] = v
-
-                        put(
-                            found,
-                            "vertical",
-                            ws.title
+                        score = (
+                            len(matched),
+                            len(cleaned),
+                            max(cleaned)
                         )
+
+                        candidates.append((
+                            score,
+                            cleaned,
+                            ws.title,
+                            col + 1,
+                            direction,
+                            from_index(start)
+                        ))
 
     if not candidates:
         raise ValueError(
-            "Excel sin serie Nacional verificable. "
-            "Hojas: "
-            + " | ".join(diagnostics)[:1500]
+            "No se pudo identificar la columna "
+            "del índice nacional. "
+            + " | ".join(diagnostics)[:1400]
         )
 
     candidates.sort(
-        key=lambda x: (
-            x[0],
-            x[1],
-            x[2]
-        ),
+        key=lambda x: x[0],
         reverse=True
     )
 
-    score, count, last, data, method, sheet = (
+    score, result, sheet, col, direction, first = (
         candidates[0]
     )
 
-    if score < 3:
+    if (
+        len(candidates) > 1
+        and candidates[1][0] == score
+        and candidates[1][1] != result
+    ):
         raise ValueError(
-            "Excel con menos de tres puntos "
-            "históricos verificables"
+            "Hay más de una interpretación posible "
+            "de los periodos SHF"
         )
 
     print(
-        f"SHF Excel: hoja={sheet}, "
-        f"método={method}, "
-        f"{count} trimestres, "
-        f"{score} controles verificados, "
-        f"último={last}",
+        f"SHF Excel validado: hoja={sheet}; "
+        f"columna={col}; "
+        f"primer bloque={first}; "
+        f"orden={'ascendente' if direction == 1 else 'descendente'}; "
+        f"controles={score[0]}; "
+        f"periodo={min(result)} a {max(result)}",
         flush=True
     )
 
-    return data
+    return result
 
 
 def parse_pdf(blob):
