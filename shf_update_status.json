@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-03T16:55:06",
   "status": "error",
-  "error": "https://www.gob.mx/cms/uploads/attachment/file/1097035/Indice_SHF_datos_abiertos_2_trim_2026.xlsx: SHF: sólo se reconocieron 0 trimestres; no se reemplaza la serie."
+  "checked_at_utc": "2026-11-03T17:26:09.649295+00:00",
+  "error": "SHF: ningún anexo pudo validar la fila Nacional. (17, 2): unknown url type: '(17, 2)' | (14, 1): unknown url type: '(14, 1)' | (7, 0): unknown url type: '(7, 0)'"
 }

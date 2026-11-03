@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-03T16:55:06",
+  "generated_at": "2026-11-03T17:26:09",
   "objetivo": "Preferencia 2016; alternativa 2018 cuando la serie validada no tenga histórico anterior o cambie metodología",
   "series": [
     {
@@ -159,10 +159,10 @@
       "archivo": "shf_indice_trimestral.csv",
       "frecuencia": "trimestral",
       "objetivo_inicio": "2016-T1",
-      "primer_periodo": "2022-T1",
-      "ultimo_periodo": "2026-T2",
-      "observaciones": 18,
-      "cobertura_objetivo": "pendiente_backfill"
+      "primer_periodo": "2016-T1",
+      "ultimo_periodo": "2019-T4",
+      "observaciones": 16,
+      "cobertura_objetivo": "completo"
     },
     {
       "archivo": "csvm_pib_vivienda_anual.csv",
@@ -181,7 +181,6 @@
     "enec_vivienda_yoy.csv",
     "enec_edificacion_variacion_mensual.csv",
     "imss_sbc_construccion_mensual.csv",
-    "bridge_financing_anual.csv",
-    "shf_indice_trimestral.csv"
+    "bridge_financing_anual.csv"
   ]
 }
