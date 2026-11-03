@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """Descarga ENOE desde InfoLaboral usando una sesión nueva de navegador.
 
@@ -94,3 +95,102 @@ SET_CHECKBOXES_JS = r'''({mode, fromYear}) => {
   for (const el of inputs) {
     const label = getLabel(el);
     const value = (el.value || '').trim();
+    let desired = null;
+    let year = null;
+    if (mode === 'variables') {
+      if (/^3\.2\. sector de actividad economica/.test(label)) desired = true;
+      if (/^poblacion ocupada$/.test(label)) desired = true;
+      if (/^3\.1\. posicion en la ocupacion/.test(label)) desired = false;
+    } else if (mode === 'years') {
+      // ASP.NET puede presentar los años en el atributo value SIN texto de etiqueta.
+      const fromValue = /^20\d{2}$/.test(value) ? Number(value) : null;
+      const fromLabel = /^20\d{2}$/.test(label) ? Number(label) : null;
+      year = fromValue !== null ? fromValue : fromLabel;
+      if (year !== null && year >= 2005 && year <= 2099) desired = year >= fromYear;
+    }
+    if (desired !== null) {
+      if (el.checked !== desired) {
+        el.checked = desired;
+        el.dispatchEvent(new Event('input', {bubbles:true}));
+        el.dispatchEvent(new Event('change', {bubbles:true}));
+      }
+      updated.push({label, value, year, checked:el.checked, desired, id:el.id});
+    }
+    if (mode === 'years' && year !== null) found.push(year);
+  }
+  return {updated, yearsFound: found, checkboxCount: inputs.length};
+}'''
+
+
+def fetch_live():
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+        try:
+            page = browser.new_page(locale='es-MX', viewport={'width': 1600, 'height': 1000})
+            page.set_default_timeout(35000)
+            response = page.goto(URL, wait_until='domcontentloaded', timeout=90000)
+            if response is None or response.status >= 400:
+                raise RuntimeError(f'InfoLaboral no abrió: HTTP {response.status if response else "sin respuesta"}')
+            page.locator('#btngind').click()
+            page.locator('#btngind_ind').click()
+            selected = page.evaluate(SET_CHECKBOXES_JS, {'mode':'variables', 'fromYear':2016})
+            if not any('3.2.' in t['label'] and t['checked'] for t in selected['updated']):
+                raise RuntimeError('No se pudo identificar la casilla de sector de actividad económica')
+            page.locator('#btngind_cob').click()
+            selected_years = page.evaluate(SET_CHECKBOXES_JS, {'mode':'years', 'fromYear':2016})
+            years_ok = any(t['year'] == 2016 and t['checked'] for t in selected_years['updated'])
+            print('ENOE selección de años: ' + json.dumps({
+                'casillas': selected_years['checkboxCount'],
+                'años_detectados': selected_years['yearsFound'],
+                'años_marcados': [t['year'] for t in selected_years['updated'] if t['checked']],
+            }, ensure_ascii=False), flush=True)
+            if not years_ok:
+                raise RuntimeError('No se pudo marcar 2016. Diagnóstico: ' +
+                                   json.dumps(selected_years, ensure_ascii=False)[:2500])
+            # La configuración predeterminada es Nacional / Total / Todos los trimestres / Absolutos.
+            # Verificamos los resultados por estructura, cobertura y controles históricos.
+            page.locator('#btngind_con').click(timeout=90000)
+            page.locator('#reporte1').wait_for(state='attached', timeout=90000)
+            content = page.locator('#reporte1').evaluate('(el) => el.outerHTML')
+            return parse_table(content)
+        finally:
+            browser.close()
+
+
+def main():
+    status = {'checked_at_utc': datetime.now(timezone.utc).isoformat(),
+              'source': 'INEGI ENOE InfoLaboral (consulta automática HTML)',
+              'units': 'miles de personas', 'updated': False}
+    try:
+        rows = fetch_live()
+        previous = read_existing()
+        last_old = max((r.get('periodo','') for r in previous), default='')
+        if rows[-1]['periodo'] < last_old:
+            raise ValueError(f'Fuente retrocedió de {last_old} a {rows[-1]["periodo"]}')
+        # No convertir una posible caída del sitio en un borrado de los datos existentes.
+        old_map = {r['periodo']:r for r in previous}
+        for row in rows:
+            old = old_map.get(row['periodo'])
+            if old:
+                for field in ('formal', 'informal'):
+                    row[field] = old.get(field,'')
+        tmp = OUT.with_suffix('.csv.tmp')
+        with tmp.open('w', encoding='utf-8-sig', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=['periodo','total','ocupada_total','formal','informal'])
+            writer.writeheader()
+            writer.writerows(rows)
+        tmp.replace(OUT)
+        status.update(updated=True, first_quarter=rows[0]['periodo'], last_quarter=rows[-1]['periodo'],
+                      observations=len(rows), gap_2020_T2=True)
+        print(f'ENOE automática: {rows[0]["periodo"]} a {rows[-1]["periodo"]}; {len(rows)} observaciones')
+    except Exception as exc:
+        status['error'] = str(exc)
+        print(f'ERROR ENOE InfoLaboral: {exc}', flush=True)
+        raise
+    finally:
+        STATUS.write_text(json.dumps(status, ensure_ascii=False, indent=2)+'\n',encoding='utf-8')
+
+
+if __name__ == '__main__':
+    main()
