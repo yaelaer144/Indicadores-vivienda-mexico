@@ -33,6 +33,14 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Descargar y validar ICC e INPP desde INEGI
         run: python scripts/update_icc_inpp.py
+      - name: Guardar diagnóstico ICC e INPP
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostico-icc-inpp
+          path: icc_inpp_diagnostico/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Reconstruir datos del dashboard
         run: python scripts/rebuild_local_data.py
       - name: Revisar sintaxis de JavaScript
