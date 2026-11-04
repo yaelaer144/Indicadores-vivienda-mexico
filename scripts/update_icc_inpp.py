@@ -423,10 +423,13 @@ def export_browser(kind, output):
                     flush=True,
                 )
 
+
             controls = []
 
             for frame in page.frames:
                 for selector in (
+                    'img[src*="ico_csv.png"]',
+                    'img[onclick*="ExportaFormatoPopUp"]',
                     'a:has-text("CSV")',
                     'button:has-text("CSV")',
                     'input[value="CSV"]',
