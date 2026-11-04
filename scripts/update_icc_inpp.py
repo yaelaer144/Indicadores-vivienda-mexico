@@ -387,8 +387,11 @@ def export_browser(kind, output):
                             const text = clean(
                                 cell.innerText || cell.textContent
                             ).replace(/^[+\-−]\s*/, '');
+                            return (
+                            text === clean(label) ||
+                            text.startsWith(clean(label) + ' ')
+                            );
 
-                            return text === clean(label);
                         });
                     }
                     """,
