@@ -349,13 +349,19 @@ def export_browser(kind, output):
                     except Exception:
                         continue
 
-                if len(matches) != 1:
+                if not matches:
                     raise RuntimeError(
-                        f"{kind}: serie {label!r} encontrada "
-                        f"{len(matches)} veces"
+                        f"{kind}: no se encontró la serie {label!r}"
                     )
+                    frame, _ = matches[0]
+                    if len(matches) > 1:
+                        print(
+                            f"{kind.upper()}: {label!r} tiene "
+                            f"{len(matches)} coincidencias; "
+                            "se utilizará la primera",
+                            flush=True,
+                        )
 
-                frame, _ = matches[0]
 
                 # Localizar la fila por la primera celda.
                 index = frame.evaluate(
