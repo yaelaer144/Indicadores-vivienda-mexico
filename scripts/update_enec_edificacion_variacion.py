@@ -274,50 +274,47 @@ def download_html(folder):
 
             page.wait_for_timeout(2500)
 
-            export = page.locator(
-                'img[alt*="Excel"], '
-                'img[title*="Excel"], '
-                'a[title*="XLS"], '
-                'a[title*="Excel"]'
-            ).first
-
-            if export.count() == 0:
-                raise RuntimeError(
-                    "No se identificó "
-                    "el control XLS"
-                )
-
-            with page.expect_download(
-                timeout=90000
-            ) as task:
-                export.click(timeout=15000)
-
-            path = Path(folder) / "tabulado.xls"
-
-            task.value.save_as(path)
+            # Leer directamente la tabla publicada por INEGI.
+            # No se necesita descargar XLS ni CSV.
 
             print(
-                "ENEC desestacionalizada: "
-                f"exportación recibida "
-                f"({path.stat().st_size} bytes)",
+                "ENEC: consultando tabla HTML...",
                 flush=True,
             )
 
-            raw = path.read_bytes()
+            page.wait_for_function(
+                """() => {
+                    const tablas = Array.from(
+                        document.querySelectorAll('table')
+                    );
 
-            for encoding in (
-                "utf-8-sig",
-                "cp1252",
-                "latin1",
-            ):
-                try:
-                    return raw.decode(encoding)
-                except UnicodeDecodeError:
-                    continue
+                    return tablas.some(tabla => {
+                        const texto = tabla.innerText || '';
 
-            raise ValueError(
-                "No se pudo leer la exportación"
+                        return (
+                            texto.includes('Edificación') &&
+                            texto.includes('2016') &&
+                            texto.includes('Enero')
+                        );
+                    });
+                }""",
+                timeout=30000,
             )
+
+            html = page.content()
+
+            # Validar antes de devolver la información.
+            valores = extract(html)
+
+            print(
+                "ENEC: tabla consultada correctamente; "
+                f"{len(valores)} observaciones, "
+                f"de {min(valores)} a {max(valores)}",
+                flush=True,
+            )
+
+            return html
+
 
         except Exception:
             page.screenshot(
