@@ -1,45 +1,138 @@
+
 name: ENEC produccion - validacion y actualizacion mensual
+
 on:
   workflow_dispatch:
   schedule:
     - cron: '15 16 26 * *'
+
 permissions:
   contents: write
+
 concurrency:
   group: vivienda-actualizacion
   cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Obtener archivos del repositorio
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+          persist-credentials: true
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'   
-      - name: Instalar dependencia para Excel
-        run: python -m pip install openpyxl
+          python-version: '3.12'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install openpyxl playwright==1.56.0 beautifulsoup4
+          python -m playwright install --with-deps chromium
+
+      # BLOQUE 1: ENEC PRODUCCION ORIGINAL
+
       - name: Consultar ENEC PxWeb y sustituir historico oficial
         id: consultar
         continue-on-error: true
         run: python scripts/update_enec_produccion.py
+
+      # BLOQUE 2: ACTIVIDAD PRODUCTIVA DE VIVIENDA
+
+      - name: Actualizar variacion mensual desestacionalizada de Edificacion
+        id: edificacion
+        continue-on-error: true
+        run: python scripts/update_enec_edificacion_variacion.py
+
+      # DIAGNOSTICO AUTOMATICO
+
+      - name: Guardar diagnostico de Edificacion si falla
+        if: steps.edificacion.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostico-enec-desestacionalizada
+          path: |
+            diagnostico_enec_desestacionalizada.html
+            diagnostico_enec_desestacionalizada.png
+          if-no-files-found: warn
+          retention-days: 7
+
+      # RECONSTRUIR DASHBOARD
+
       - name: Reconstruir datos del dashboard
-        if: steps.consultar.outcome == 'success'
+        id: reconstruir
+        if: |
+          steps.consultar.outcome == 'success' ||
+          steps.edificacion.outcome == 'success'
+        continue-on-error: true
         run: python scripts/rebuild_local_data.py
+
+      - name: Revisar sintaxis de JavaScript
+        if: steps.reconstruir.outcome == 'success'
+        run: node --check local-data.js
+
+      # GUARDAR RESULTADOS EN GITHUB
+
       - name: Guardar CSV y diagnostico
         if: always()
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          for file in enec_actividad_historica.csv enec_produccion_update_status.json local-data.js enec_produccion_inegi_original.json enec_produccion_inegi.xlsx; do
-            if [ -f "$file" ]; then git add "$file"; fi
+
+          for file in \
+            enec_actividad_historica.csv \
+            enec_produccion_update_status.json \
+            enec_produccion_inegi_original.json \
+            enec_produccion_inegi.xlsx \
+            enec_edificacion_variacion_mensual.csv; do
+
+            if [ -f "$file" ]; then
+              git add "$file"
+            fi
           done
-          if ! git diff --cached --quiet; then
-            git commit -m 'Actualizar ENEC produccion desde tabulados INEGI'
+
+          if [ "${{ steps.reconstruir.outcome }}" = "success" ] && [ -f "local-data.js" ]; then
+            git add local-data.js
+          fi
+
+          if git diff --cached --quiet; then
+            echo "No hay cambios en los datos."
+          else
+            git commit -m 'Actualizar ENEC produccion y actividad productiva de vivienda'
             git pull --rebase
             git push
           fi
-      - name: Informar error de validacion
-        if: steps.consultar.outcome != 'success'
-        run: exit 1
+
+      # VALIDACION FINAL
+
+      - name: Informar errores de actualizacion
+        if: always()
+        run: |
+          echo "Resultado ENEC produccion: ${{ steps.consultar.outcome }}"
+          echo "Resultado Edificacion desestacionalizada: ${{ steps.edificacion.outcome }}"
+          echo "Resultado reconstruccion: ${{ steps.reconstruir.outcome }}"
+
+          if [ "${{ steps.consultar.outcome }}" != "success" ]; then
+            echo "::warning::Fallo la consulta ENEC produccion."
+          fi
+
+          if [ "${{ steps.edificacion.outcome }}" != "success" ]; then
+            echo "::warning::Fallo la consulta de Edificacion desestacionalizada."
+          fi
+
+          if [ "${{ steps.reconstruir.outcome }}" = "failure" ]; then
+            echo "::error::Fallo la reconstruccion del dashboard."
+            exit 1
+          fi
+
+          if [ "${{ steps.consultar.outcome }}" != "success" ] && \
+             [ "${{ steps.edificacion.outcome }}" != "success" ]; then
+            echo "::error::Fallaron ambas consultas ENEC."
+            exit 1
+          fi
