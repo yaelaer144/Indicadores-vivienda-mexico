@@ -422,6 +422,23 @@ def export_browser(kind, output):
                     f"{kind.upper()}: seleccionada {label}",
                     flush=True,
                 )
+                
+                # INPP: desplegar los subsectores de construcción.
+                if kind == "inpp" and label in (
+                    "23 Construcción",
+                    "236 Edificación",
+                ):
+                    estado = row.get_attribute("data-estatus")
+
+                    if estado == "cerrado":
+                        row.evaluate("(tr) => tr.click()")
+                        page.wait_for_timeout(2000)
+
+                        print(
+                            f"INPP: desplegado {label}",
+                            flush=True,
+                        )
+
 
 
             controls = []
