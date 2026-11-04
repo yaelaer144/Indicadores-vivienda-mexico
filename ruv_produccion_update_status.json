@@ -1,0 +1,5 @@
+{
+  "status": "error",
+  "updated_at": "2026-11-04T18:39:43.819946+00:00",
+  "error": "could not convert string to float: 'julio'"
+}
