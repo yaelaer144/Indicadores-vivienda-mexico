@@ -1,0 +1,18 @@
+{
+  "estado": "actualizado",
+  "fuente": "INEGI",
+  "base": "julio 2025=100",
+  "fecha_actualizacion_utc": "2026-11-04T17:20:13.782118+00:00",
+  "series": {
+    "icc": {
+      "mes_inicial": "2016-01",
+      "mes_final": "2026-09",
+      "meses": 129
+    },
+    "inpp": {
+      "mes_inicial": "2016-01",
+      "mes_final": "2026-09",
+      "meses": 129
+    }
+  }
+}
