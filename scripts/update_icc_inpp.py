@@ -445,10 +445,47 @@ def export_browser(kind, output):
                     f"{kind}: no se encontró botón CSV"
                 )
 
-            with page.expect_download(timeout=120000) as download:
-                controls[0].click(timeout=15000)
+
+            # Abrir la ventana de exportación CSV de INEGI.
+            controls[0].click(timeout=15000)
+
+            modal = page.locator("#basicModal2")
+            modal.wait_for(state="visible", timeout=20000)
+
+            print(
+                f"{kind.upper()}: ventana de exportación abierta",
+                flush=True,
+            )
+
+            # Seleccionar el histórico desde 2016.
+            modal.locator(
+                'select[id$="_ddlAnioI"]'
+            ).select_option("2016")
+
+            modal.locator(
+                'select[id$="_ddlAnioF"]'
+            ).select_option(
+                str(datetime.now().year)
+            )
+
+            # Descargar índices, no tasas de inflación.
+            modal.locator(
+                'select[id$="_ddlTipoInfo"]'
+            ).select_option("Niveles")
+
+            print(
+                f"{kind.upper()}: periodo e índices configurados",
+                flush=True,
+            )
+
+            # La descarga se solicita al pulsar Exportar.
+            with page.expect_download(timeout=60000) as download:
+                modal.locator(
+                    "#btnAceptarExporta"
+                ).click(timeout=15000)
 
             download.value.save_as(str(output))
+
 
             print(
                 f"{kind.upper()}: CSV descargado "
