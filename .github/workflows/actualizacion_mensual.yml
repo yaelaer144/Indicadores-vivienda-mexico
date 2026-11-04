@@ -35,7 +35,7 @@ jobs:
         env:
           INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
         run: |
-          python scripts/run_group.py monthly update_inegi_series.py:monthly update_remaining_inegi.py update_ruv_flow.py update_sniiv_kpis.py
+          python scripts/run_group.py monthly update_inegi_series.py:monthly update_remaining_inegi.py update_ruv_flow.py update_ruv_produccion.py update_sniiv_kpis.py
 
       - name: Regenerar datos y auditar histórico
         if: always()
@@ -48,7 +48,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A -- '*.csv' '*.json' 'local-data.js'
+          git add -A -- '*.csv' '*.json' 'local-data.js' 'ruv-produccion.js'
           git diff --cached --quiet || (git commit -m "Actualización por frecuencia: ${{ github.workflow }}" && git push)
 
       - name: Informar errores de fuentes sin ocultar publicación
