@@ -1,10 +1,10 @@
 window.RUV_PRODUCTION = {
-  "source": "RUV / SNIIV; respaldo histórico: Reportes Anuales de Vivienda Infonavit con fuente RUV",
+  "source": "SEDATU / SNIIV / RUV",
   "endpoint": "https://sniiv.sedatu.gob.mx/api/CuboAPI/GetProduccion",
-  "generated_at": "2026-08-27T13:00:00-06:00",
-  "latest_period": "2025-12",
-  "fallback": true,
-  "fallback_note": "Respaldo histórico conservado con el desglose oficial disponible por segmento (Económica, Popular B1, Popular B2, Popular B3, Tradicional y Media-residencial). La ejecución mensual consulta SNIIV/RUV para actualizar los años recientes.",
+  "generated_at": "2026-11-05T15:10:12.354611+00:00",
+  "latest_period": "2026-08",
+  "fallback": false,
+  "fallback_note": "Respaldo actualizado automáticamente con API SNIIV; años históricos previos conservados.",
   "total": {
     "annual": [
       {
@@ -77,19 +77,25 @@ window.RUV_PRODUCTION = {
         "year": 2023,
         "months_observed": 12,
         "partial": false,
-        "total": 130995
+        "total": 130996
       },
       {
         "year": 2024,
         "months_observed": 12,
         "partial": false,
-        "total": 128143
+        "total": 128142
       },
       {
         "year": 2025,
         "months_observed": 12,
         "partial": false,
-        "total": 138600
+        "total": 138236
+      },
+      {
+        "year": 2026,
+        "months_observed": 8,
+        "partial": true,
+        "total": 91278
       }
     ]
   },
@@ -165,12 +171,12 @@ window.RUV_PRODUCTION = {
         "partial": false,
         "total": 264209,
         "values": {
-          "Económica": 10040,
-          "Popular B1": 12154,
-          "Popular B2": 81112,
-          "Popular B3": 70808,
-          "Tradicional": 65524,
-          "Media-residencial": 24571
+          "Económica": 8495,
+          "Popular B1": 11522,
+          "Popular B2": 74557,
+          "Popular B3": 75630,
+          "Tradicional": 67229,
+          "Media-residencial": 26776
         }
       },
       {
@@ -179,12 +185,12 @@ window.RUV_PRODUCTION = {
         "partial": false,
         "total": 217331,
         "values": {
-          "Económica": 3695,
-          "Popular B1": 6520,
-          "Popular B2": 74326,
-          "Popular B3": 51725,
-          "Tradicional": 58245,
-          "Media-residencial": 22820
+          "Económica": 3174,
+          "Popular B1": 5438,
+          "Popular B2": 51094,
+          "Popular B3": 70032,
+          "Tradicional": 60266,
+          "Media-residencial": 27327
         }
       },
       {
@@ -193,12 +199,12 @@ window.RUV_PRODUCTION = {
         "partial": false,
         "total": 210490,
         "values": {
-          "Económica": 2105,
-          "Popular B1": 5683,
-          "Popular B2": 61253,
-          "Popular B3": 63147,
-          "Tradicional": 51991,
-          "Media-residencial": 26311
+          "Económica": 1570,
+          "Popular B1": 3915,
+          "Popular B2": 44918,
+          "Popular B3": 74604,
+          "Tradicional": 55481,
+          "Media-residencial": 30002
         }
       },
       {
@@ -207,12 +213,12 @@ window.RUV_PRODUCTION = {
         "partial": false,
         "total": 181133,
         "values": {
-          "Económica": 1811,
-          "Popular B1": 3260,
-          "Popular B2": 35321,
-          "Popular B3": 60499,
-          "Tradicional": 53978,
-          "Media-residencial": 26264
+          "Económica": 974,
+          "Popular B1": 1965,
+          "Popular B2": 23075,
+          "Popular B3": 66411,
+          "Tradicional": 58503,
+          "Media-residencial": 30205
         }
       },
       {
@@ -221,12 +227,12 @@ window.RUV_PRODUCTION = {
         "partial": false,
         "total": 151444,
         "values": {
-          "Económica": 757,
-          "Popular B1": 2120,
-          "Popular B2": 23777,
-          "Popular B3": 52248,
-          "Tradicional": 51491,
-          "Media-residencial": 21051
+          "Económica": 392,
+          "Popular B1": 1329,
+          "Popular B2": 17332,
+          "Popular B3": 53180,
+          "Tradicional": 55326,
+          "Media-residencial": 23885
         }
       },
       {
@@ -235,12 +241,12 @@ window.RUV_PRODUCTION = {
         "partial": false,
         "total": 164151,
         "values": {
-          "Económica": 657,
-          "Popular B1": 1149,
-          "Popular B2": 19206,
-          "Popular B3": 53677,
-          "Tradicional": 65824,
-          "Media-residencial": 23638
+          "Económica": 318,
+          "Popular B1": 662,
+          "Popular B2": 13689,
+          "Popular B3": 51832,
+          "Tradicional": 70850,
+          "Media-residencial": 26800
         }
       },
       {
@@ -249,26 +255,68 @@ window.RUV_PRODUCTION = {
         "partial": false,
         "total": 135647,
         "values": {
-          "Económica": 543,
-          "Popular B1": 814,
-          "Popular B2": 13972,
-          "Popular B3": 41237,
-          "Tradicional": 57106,
-          "Media-residencial": 21975
+          "Económica": 273,
+          "Popular B1": 327,
+          "Popular B2": 7327,
+          "Popular B3": 35725,
+          "Tradicional": 64920,
+          "Media-residencial": 27075
         }
       },
       {
         "year": 2023,
         "months_observed": 12,
         "partial": false,
-        "total": 130995,
+        "total": 130996,
         "values": {
-          "Económica": 655,
-          "Popular B1": 524,
-          "Popular B2": 11004,
-          "Popular B3": 38775,
-          "Tradicional": 56851,
-          "Media-residencial": 23186
+          "Económica": 130,
+          "Popular B1": 313,
+          "Popular B2": 5075,
+          "Popular B3": 30108,
+          "Tradicional": 63891,
+          "Media-residencial": 31479
+        }
+      },
+      {
+        "year": 2024,
+        "months_observed": 12,
+        "partial": false,
+        "total": 128142,
+        "values": {
+          "Económica": 463,
+          "Popular B1": 260,
+          "Popular B2": 6572,
+          "Popular B3": 25453,
+          "Tradicional": 62393,
+          "Media-residencial": 33001
+        }
+      },
+      {
+        "year": 2025,
+        "months_observed": 12,
+        "partial": false,
+        "total": 138236,
+        "values": {
+          "Económica": 358,
+          "Popular B1": 128,
+          "Popular B2": 2622,
+          "Popular B3": 18759,
+          "Tradicional": 72194,
+          "Media-residencial": 44175
+        }
+      },
+      {
+        "year": 2026,
+        "months_observed": 8,
+        "partial": true,
+        "total": 91278,
+        "values": {
+          "Económica": 306,
+          "Popular B1": 214,
+          "Popular B2": 991,
+          "Popular B3": 7890,
+          "Tradicional": 49953,
+          "Media-residencial": 31924
         }
       }
     ]
