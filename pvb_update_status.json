@@ -1,0 +1,20 @@
+{
+  "status": "actualizado",
+  "checked_at_utc": "2026-11-05T17:50:44.921202+00:00",
+  "articulos_validados": 1,
+  "nuevas_filas": [
+    {
+      "periodo": "2026-10-30",
+      "etapa": "Contratadas",
+      "viviendas": 667000
+    },
+    {
+      "periodo": "2026-10-30",
+      "etapa": "En construcción",
+      "viviendas": 277000
+    }
+  ],
+  "errores_consulta": [],
+  "ultimo_periodo": "2026-10-30",
+  "nota": "Solo cifras nacionales de contratadas y en obra verificadas juntas. No se equiparan asignadas, colocadas y entregadas."
+}
