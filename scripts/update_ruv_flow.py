@@ -113,7 +113,7 @@ def main():
     for row in rows:
         if not isinstance(row, dict): raise RuntimeError('Fila no tabular')
         y = integer(row.get('anio', row.get('año', row.get('year'))), 'año')
-        m = integer(row.get('mes', row.get('month')), 'mes')
+        m = parse_month(row.get('mes', row.get('month')))
         if not START <= y <= END or not 1 <= m <= 12:
             raise RuntimeError(f'Periodo inválido: {y}-{m}')
         category = segment(row.get('segmento'))
