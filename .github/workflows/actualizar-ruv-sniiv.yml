@@ -1,0 +1,85 @@
+name: Actualizar RUV y SNIIV (produccion y registro)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '40 14 16 * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vivienda-actualizacion
+  cancel-in-progress: false
+
+jobs:
+  actualizar-ruv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Ejecutar extractores de RUV y SNIIV
+        id: consultas
+        continue-on-error: true
+        run: |
+          python scripts/run_group.py ruv update_ruv_flow.py update_ruv_produccion.py update_sniiv_kpis.py
+
+      - name: Publicar resultados y diagnósticos
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for file in ruv_flujo_vivienda_anual.csv ruv_update_status.json ruv-produccion.js ruv_produccion_caracteristicas.json ruv_produccion_update_status.json sniiv_kpis.csv sniiv_kpis_update_status.json update_ruv_status.json; do
+            if [ -f "$file" ]; then git add -- "$file"; fi
+          done
+          if ! git diff --cached --quiet; then
+            git commit -m "Actualizar series RUV y SNIIV"
+            git push
+          else
+            echo "Sin cambios de datos o diagnósticos"
+          fi
+
+      - name: Resumen de la ejecución RUV
+        if: always()
+        run: |
+          python - <<'PYCODE'
+          import json, pathlib, sys
+          p=pathlib.Path('update_ruv_status.json')
+          if not p.exists():
+              print('::error::No se generó update_ruv_status.json')
+              sys.exit(1)
+          report=json.loads(p.read_text(encoding='utf-8'))
+          for result in report.get('results',[]):
+              name=result['script']
+              status=result['status']
+              print(f'{name}: {status}')
+              if status!='ok':
+                  detail_files={
+                      'update_ruv_flow.py':'ruv_update_status.json',
+                      'update_ruv_produccion.py':'ruv_produccion_update_status.json',
+                      'update_sniiv_kpis.py':'sniiv_kpis_update_status.json',
+                  }
+                  diagnostic=pathlib.Path(detail_files.get(name,''))
+                  if diagnostic.is_file():
+                      try:
+                          details=json.loads(diagnostic.read_text(encoding='utf-8'))
+                          if details.get('status')=='error':
+                              print('  Causa: '+str(details.get('error','No especificada')))
+                      except Exception:
+                          pass
+          failed=report.get('failed',[])
+          if failed:
+              print('::error::Fallaron: '+', '.join(failed))
+              sys.exit(1)
+          print('Todas las consultas RUV/SNIIV se ejecutaron correctamente')
+          PYCODE
