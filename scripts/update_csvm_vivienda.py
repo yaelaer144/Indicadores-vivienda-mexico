@@ -1,12 +1,14 @@
 
 #!/usr/bin/env python3
-"""Actualización defensiva de la Cuenta Satélite de Vivienda (INEGI).
+"""Actualización del PIB de vivienda desde el INEGI.
 
-Actualiza csvm_pib_vivienda_anual.csv cuando encuentra una tabla oficial
-compatible y validada.
+Cuenta Satélite de Vivienda de México (CSVM).
+Valores corrientes, sin alquiler imputado.
 
-Variable opcional:
-    CSVM_SOURCE_URL = URL HTTPS de una exportación oficial del INEGI.
+Descarga el XLSX mediante Playwright, valida los datos
+y actualiza csvm_pib_vivienda_anual.csv.
+
+CSVM_LOCAL_XLSX es opcional y solo sirve para pruebas.
 """
 
 import csv
@@ -15,20 +17,19 @@ import json
 import os
 import re
 import sys
-import urllib.request
 import unicodedata
 
 from datetime import datetime, timezone
 from pathlib import Path
-from html.parser import HTMLParser
-from urllib.parse import urlparse
+
+from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parents[1]
 
-CSV = ROOT / "csvm_pib_vivienda_anual.csv"
+OUTPUT = ROOT / "csvm_pib_vivienda_anual.csv"
 STATUS = ROOT / "csvm_update_status.json"
 
-COLUMNS = [
+FIELDS = [
     "anio",
     "pib_total_mdp",
     "participacion_pib_pct",
@@ -39,424 +40,344 @@ COLUMNS = [
     "fuente",
 ]
 
-METRICS = COLUMNS[1:-1]
+SOURCE = "INEGI · Cuenta Satélite de Vivienda de México"
 
-DEFAULT_SOURCES = [
-    "https://www.inegi.org.mx/temas/viviendasat/",
-    (
-        "https://www.inegi.org.mx/app/tabulados/default.aspx"
-        "?cno=1&idrt=3268&in=28&opc=p&pr=24&tp=20&vr=1&wr=1"
-    ),
-]
-
-SYNONYMS = {
-    "pib_total_mdp": (
-        "pib de la vivienda",
-        "pib del sector de la vivienda",
-        "producto interno bruto de la vivienda",
-    ),
-    "participacion_pib_pct": (
-        "proporcion respecto al total nacional",
-        "participacion en el pib",
-        "participacion respecto al pib",
-        "participacion del pib",
-    ),
-    "edificacion_mdp": ("edificacion",),
-    "adquisicion_mdp": ("adquisicion",),
-    "uso_mdp": (
-        "uso",
-        "uso de vivienda",
-        "uso de la vivienda",
-    ),
-    "regulacion_fomento_mdp": (
-        "regulacion y fomento",
-        "regulacion, promocion y fomento",
-        "regulacion promocion y fomento",
-    ),
-}
-
-SOURCE_LABEL = "INEGI · Cuenta Satélite de Vivienda de México"
+TABULADO_URL = (
+    "https://www.inegi.org.mx/app/tabulados/default.aspx"
+    "?pr=24&vr=1&in=5&tp=20&wr=1&cno=1&idrt=3268&opc=p"
+)
 
 
-def normalize(value):
-    s = unicodedata.normalize("NFKD", str(value))
-    s = s.encode("ascii", "ignore").decode().lower()
+def norm(x):
+    x = unicodedata.normalize(
+        "NFKD", str(x or "")
+    )
+
     return re.sub(
-        r"\s+", " ",
-        re.sub(r"[^a-z0-9]+", " ", s)
+        r"\s+",
+        " ",
+        x.encode("ascii", "ignore").decode().lower()
     ).strip()
 
 
-def num(value):
-    if value is None:
-        return None
-
-    s = str(value)
-    s = s.replace("\u00a0", " ")
-    s = s.strip().replace(",", "").replace(" ", "")
-
-    if not s or s in ("-", "N/D", "nan", "None"):
-        return None
-
-    try:
-        return float(s.rstrip("%"))
-    except ValueError:
-        return None
-
-
-def read_existing():
-    with CSV.open(encoding="utf-8-sig", newline="") as f:
-        rows = list(csv.DictReader(f))
-
-    if not rows or not all(k in rows[0] for k in COLUMNS):
-        raise ValueError(
-            "CSV histórico ausente o columnas incompatibles"
-        )
-
-    return {
-        int(r["anio"]): {
-            k: num(r[k]) for k in METRICS
-        }
-        for r in rows
-    }
-
-
-class Tables(HTMLParser):
-    """Extrae tablas HTML sin depender de un navegador."""
-
-    def __init__(self):
-        super().__init__()
-        self.tables = []
-        self.table = None
-        self.row = None
-        self.cell = None
-
-    def handle_starttag(self, tag, attrs):
-        if tag == "table":
-            self.table = []
-
-        elif self.table is not None and tag == "tr":
-            self.row = []
-
-        elif self.row is not None and tag in ("td", "th"):
-            self.cell = []
-
-    def handle_data(self, data):
-        if self.cell is not None:
-            self.cell.append(data)
-
-    def handle_endtag(self, tag):
-        if tag in ("td", "th") and self.cell is not None:
-            self.row.append(" ".join(self.cell).strip())
-            self.cell = None
-
-        elif tag == "tr" and self.row is not None:
-            if self.row:
-                self.table.append(self.row)
-            self.row = None
-
-        elif tag == "table" and self.table is not None:
-            if self.table:
-                self.tables.append(self.table)
-            self.table = None
-
-
-def parse_matrix(matrix):
-    """Identifica años en columnas o años en filas."""
-
-    if not matrix:
-        return {}
-
-    matrix = [
-        [str(x or "").strip() for x in r]
-        for r in matrix if r
-    ]
-
-    results = {}
-
-    # Caso A: años en columnas
-    for header_idx, header in enumerate(matrix[:12]):
-        yrs = {}
-
-        for i, value in enumerate(header):
-            match = re.search(r"\b(20\d{2})\b", value)
-
-            if match:
-                yrs[i] = int(match.group(1))
-
-        if len(yrs) < 3:
-            continue
-
-        for row in matrix[header_idx + 1:]:
-            label = normalize(
-                " ".join(row[:min(2, min(yrs))])
-            )
-
-            for metric, aliases in SYNONYMS.items():
-                if any(
-                    label == normalize(a)
-                    or label.startswith(normalize(a) + " ")
-                    for a in aliases
-                ):
-                    for i, year in yrs.items():
-                        if i < len(row):
-                            value = num(row[i])
-
-                            if value is not None:
-                                results.setdefault(year, {})[
-                                    metric
-                                ] = value
-
-        if results:
-            return results
-
-    # Caso B: años en filas
-    for header_idx, header in enumerate(matrix[:8]):
-        mapping = {}
-
-        for i, value in enumerate(header):
-            v = normalize(value)
-
-            if v in ("anio", "ano", "year"):
-                mapping["anio"] = i
-
-            for metric in METRICS:
-                if (
-                    v == normalize(metric)
-                    or any(v == normalize(a) for a in SYNONYMS[metric])
-                ):
-                    mapping[metric] = i
-
-        if "anio" not in mapping or len(mapping) < 4:
-            continue
-
-        for row in matrix[header_idx + 1:]:
-            if mapping["anio"] >= len(row):
-                continue
-
-            yr = num(row[mapping["anio"]])
-
-            if yr is None or yr < 2003 or yr > 2100:
-                continue
-
-            year = int(yr)
-
-            for key, idx in mapping.items():
-                if key != "anio" and idx < len(row):
-                    value = num(row[idx])
-
-                    if value is not None:
-                        results.setdefault(year, {})[
-                            key
-                        ] = value
-
-        if results:
-            return results
-
-    return {}
-
-
-def matrices_from_content(raw, url):
-    """Convierte HTML, CSV o XLSX en matrices."""
-
-    if (
-        raw[:2] == b"PK"
-        or url.lower().split("?")[0].endswith(".xlsx")
-    ):
-        from openpyxl import load_workbook
-
-        wb = load_workbook(
-            io.BytesIO(raw),
-            read_only=True,
-            data_only=True,
-        )
-
-        return [
-            list(ws.values)
-            for ws in wb.worksheets
-        ]
-
-    text = raw.decode("utf-8-sig", "replace")
-
-    if "<table" in text.lower():
-        parser = Tables()
-        parser.feed(text)
-        return parser.tables
-
-    for separator in (",", ";", "\t"):
-        parsed = list(
-            csv.reader(
-                io.StringIO(text),
-                delimiter=separator,
-            )
-        )
-
-        if parsed and len(parsed[0]) > 3:
-            return [parsed]
-
-    return []
-
-
-def fetch(url):
-    parsed = urlparse(url)
-
-    if (
-        parsed.scheme != "https"
-        or parsed.hostname not in (
-            "www.inegi.org.mx",
-            "inegi.org.mx",
-        )
+def number(x):
+    if x is None or str(x).strip() in (
+        "", "-", "N/D"
     ):
         raise ValueError(
-            "La fuente debe pertenecer al INEGI y usar HTTPS"
+            f"Valor numérico faltante: {x!r}"
         )
 
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": (
-                "Mozilla/5.0 "
-                "(compatible; vivienda-csvm/1.0)"
-            ),
-            "Accept": (
-                "text/html,text/csv,"
-                "application/vnd.openxmlformats-officedocument."
-                "spreadsheetml.sheet"
-            ),
-        },
+    return float(
+        str(x).replace(",", "").strip()
     )
 
-    with urllib.request.urlopen(req, timeout=40) as resp:
-        return resp.read(15_000_001)
 
+def parse_xlsx(content):
+    """Extrae los datos del tabulado oficial."""
 
-def merge_tables(tables):
-    combined = {}
+    wb = load_workbook(
+        io.BytesIO(content),
+        read_only=True,
+        data_only=True,
+    )
 
-    for matrix in tables:
-        subset = parse_matrix(matrix)
+    if "Tabulado" in wb.sheetnames:
+        ws = wb["Tabulado"]
+    else:
+        ws = wb.worksheets[0]
 
-        for year, rec in subset.items():
-            combined.setdefault(year, {}).update(rec)
+    # El INEGI utiliza ocho columnas por año.
+    # La tercera contiene el VAB total.
+    years = {}
 
-    return combined
+    for cells in ws.iter_rows(
+        min_row=1,
+        max_row=min(ws.max_row, 15),
+        values_only=True,
+    ):
+        for col, value in enumerate(cells):
 
+            match = re.fullmatch(
+                r"\s*(20\d{2})(?:\s*[PpRr])?\s*",
+                str(value or ""),
+            )
 
-def validate(candidate, old):
-    """Evita publicar datos incompletos o inconsistentes."""
+            if match:
+                years[col] = int(match.group(1))
 
-    ready = {
-        year: row
-        for year, row in candidate.items()
-        if all(row.get(k) is not None for k in METRICS)
+        if len(years) >= 3:
+            break
+
+    if len(years) < 3:
+        raise ValueError(
+            "No se detectaron suficientes años"
+        )
+
+    # Buscar filas por nombre, no por posición.
+    rows = {}
+
+    required = {
+        "total nacional",
+        "total vivienda",
+        "edificacion",
+        "adquisicion",
+        "uso",
+        "alquiler imputado",
+        "regulacion y fomento",
     }
 
-    if not ready:
-        raise ValueError(
-            "La fuente no publicó las 6 variables "
-            "compatibles con el dashboard"
-        )
+    for cells in ws.iter_rows(values_only=True):
 
-    overlap = sorted(set(ready) & set(old))
+        label = norm(cells[0])
 
-    if len(overlap) < 3:
-        raise ValueError(
-            "No hay al menos tres años para validar "
-            "contra el histórico"
-        )
+        if label in required:
 
-    for year in overlap[-3:]:
-        for key in (
-            "pib_total_mdp",
-            "participacion_pib_pct",
-        ):
-            before = old[year].get(key)
-            after = ready[year][key]
-
-            if (
-                before is None
-                or abs(after - before)
-                > max(abs(before) * 0.08, 0.25)
-            ):
+            if label in rows:
                 raise ValueError(
-                    "El dato oficial no coincide "
-                    f"con el histórico: {year}/{key}"
+                    "Etiqueta duplicada: " + label
                 )
 
-    for year, row in ready.items():
-        total = row["pib_total_mdp"]
+            rows[label] = cells
 
-        subtotal = sum(
-            row[k] for k in METRICS[2:]
+    missing = required - rows.keys()
+
+    if missing:
+        raise ValueError(
+            "Faltan filas: "
+            + ", ".join(sorted(missing))
         )
+
+    result = {}
+
+    for col, year in sorted(years.items()):
+
+        vab_col = col + 2
+
+        if vab_col >= ws.max_column:
+            raise ValueError(
+                f"No existe columna VAB para {year}"
+            )
+
+        def vab(label):
+            return number(
+                rows[label][vab_col]
+            )
+
+        # Valores corrientes con alquiler imputado
+        national = vab("total nacional")
+        housing = vab("total vivienda")
+        imputed = vab("alquiler imputado")
+
+        # PIB de vivienda sin alquiler imputado
+        total = housing - imputed
+
+        # Componentes
+        ed = vab("edificacion")
+        ad = vab("adquisicion")
+        use = vab("uso") - imputed
+        reg = vab("regulacion y fomento")
 
         if (
-            total <= 0
-            or abs(subtotal - total)
-            > max(total * 0.015, 5)
+            national <= 0
+            or total <= 0
+            or min(ed, ad, use, reg) < 0
         ):
             raise ValueError(
-                f"Los componentes no suman el PIB total "
-                f"en {year}: {subtotal} vs {total}"
+                f"Valores inválidos en {year}"
             )
 
-        participacion = row["participacion_pib_pct"]
+        subtotal = ed + ad + use + reg
 
-        if not (0 < participacion < 30):
+        if abs(subtotal - total) > max(
+            2, total * 0.0001
+        ):
             raise ValueError(
-                f"Participación fuera de rango en {year}"
+                f"Los componentes no suman "
+                f"el PIB total en {year}"
             )
 
-    if max(ready) < max(old):
-        raise ValueError(
-            "La fuente oficial es más antigua "
-            "que el CSV existente"
-        )
+        participation = 100 * total / national
 
-    # Conservar años no incluidos en la descarga
-    merged = {
-        year: dict(row)
-        for year, row in old.items()
-    }
+        if not 0 < participation < 30:
+            raise ValueError(
+                f"Participación inválida en {year}"
+            )
 
-    merged.update(ready)
+        result[year] = {
+            "anio": year,
+            "pib_total_mdp": round(total),
+            "participacion_pib_pct": round(
+                participation, 1
+            ),
+            "edificacion_mdp": round(ed),
+            "adquisicion_mdp": round(ad),
+            "uso_mdp": round(use),
+            "regulacion_fomento_mdp": round(reg),
+            "fuente": SOURCE,
+        }
 
-    return merged, len(ready)
+    return result
 
 
-def write_csv(data):
-    tmp = CSV.with_suffix(".csv.tmp")
+def old_rows():
+    """Lee la información histórica del dashboard."""
 
-    with tmp.open(
-        "w",
+    if not OUTPUT.exists():
+        return {}
+
+    with OUTPUT.open(
+        encoding="utf-8-sig",
         newline="",
-        encoding="utf-8",
     ) as f:
-        writer = csv.DictWriter(
-            f,
-            fieldnames=COLUMNS,
+
+        return {
+            int(r["anio"]): r
+            for r in csv.DictReader(f)
+        }
+
+
+def read_source():
+    """Descarga automáticamente desde el INEGI."""
+
+    local = os.environ.get(
+        "CSVM_LOCAL_XLSX", ""
+    ).strip()
+
+    if local:
+        path = Path(local)
+
+        if not path.is_absolute():
+            path = ROOT / path
+
+        return path.read_bytes(), str(path)
+
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as pw:
+
+        browser = pw.chromium.launch(
+            headless=True,
+            args=["--no-sandbox"],
         )
 
-        writer.writeheader()
+        try:
+            context = browser.new_context(
+                accept_downloads=True,
+                locale="es-MX",
+                viewport={
+                    "width": 1440,
+                    "height": 900,
+                },
+            )
 
-        for year in sorted(data):
-            row = {
-                "anio": year,
-                "fuente": SOURCE_LABEL,
-            }
+            page = context.new_page()
 
-            row.update({
-                k: data[year].get(k, "")
-                for k in METRICS
-            })
+            page.goto(
+                TABULADO_URL,
+                wait_until="domcontentloaded",
+                timeout=90000,
+            )
 
-            writer.writerow(row)
+            page.wait_for_timeout(3500)
 
-    tmp.replace(CSV)
+            # Buscar el botón de exportación XLSX.
+            selectors = [
+                "a:has(img[src*='xlsx'])",
+                "a:has(img[alt*='XLSX'])",
+                "a:has(img[title*='XLSX'])",
+                "img[src*='xlsx']",
+                "img[alt*='XLSX']",
+                "img[title*='XLSX']",
+                "a[title*='XLSX']",
+                "a[title*='Excel']",
+            ]
+
+            candidates = []
+
+            for frame in page.frames:
+
+                for selector in selectors:
+
+                    locator = frame.locator(selector)
+
+                    try:
+                        if (
+                            locator.count()
+                            and locator.first.is_visible()
+                        ):
+                            candidates.append(
+                                (frame, selector)
+                            )
+
+                    except Exception:
+                        pass
+
+            if not candidates:
+                raise RuntimeError(
+                    "No se encontró el botón XLSX "
+                    "en el tabulado del INEGI"
+                )
+
+            download_errors = []
+
+            for frame, selector in candidates:
+
+                try:
+                    with page.expect_download(
+                        timeout=30000
+                    ) as item:
+
+                        frame.locator(
+                            selector
+                        ).first.click(
+                            timeout=12000
+                        )
+
+                    download = item.value
+
+                    failure = download.failure()
+
+                    if failure:
+                        raise RuntimeError(
+                            "Descarga fallida: " + failure
+                        )
+
+                    data = Path(
+                        download.path()
+                    ).read_bytes()
+
+                    if not data.startswith(
+                        b"PK\x03\x04"
+                    ):
+                        raise ValueError(
+                            "La exportación no devolvió "
+                            "un XLSX válido"
+                        )
+
+                    return data, TABULADO_URL
+
+                except Exception as exc:
+                    download_errors.append(
+                        f"{selector}: "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+
+            raise RuntimeError(
+                "El INEGI mostró el botón XLSX "
+                "pero no generó una descarga. "
+                + " | ".join(download_errors[:4])
+            )
+
+        finally:
+            browser.close()
 
 
-def status(**kwargs):
+def write_status(state, **kwargs):
+    """Registra el estado de la actualización."""
+
     payload = {
+        "status": state,
         "updated_at_utc": datetime.now(
             timezone.utc
         ).isoformat(),
@@ -474,83 +395,113 @@ def status(**kwargs):
 
 
 def main():
-    previous = read_existing()
 
-    urls = (
-        [os.environ["CSVM_SOURCE_URL"]]
-        if os.getenv("CSVM_SOURCE_URL")
-        else []
-    ) + DEFAULT_SOURCES
+    try:
+        data, origin = read_source()
 
-    errors = {}
+        fresh = parse_xlsx(data)
+        previous = old_rows()
 
-    for url in dict.fromkeys(urls):
-        try:
-            content = fetch(url)
-
-            tables = matrices_from_content(
-                content, url
+        if previous and max(fresh) < max(previous):
+            raise ValueError(
+                "El Excel es anterior al último "
+                "año publicado"
             )
 
-            candidate = merge_tables(tables)
+        # Comprobar revisiones históricas.
+        for year in set(fresh) & set(previous):
 
-            merged, count = validate(
-                candidate, previous
+            old = float(
+                previous[year]["pib_total_mdp"]
             )
 
-            changed = merged != previous
-
-            if changed:
-                write_csv(merged)
-
-            status(
-                status=(
-                    "actualizado"
-                    if changed
-                    else "sin_cambios"
-                ),
-                ultimo_anio=max(merged),
-                anios_descargados=count,
-                fuente_url=url,
-                modifico_csv=changed,
+            new = float(
+                fresh[year]["pib_total_mdp"]
             )
 
-            print(
-                f"CSVM: {max(merged)}; "
-                f"{count} años fuente; "
-                f"cambios={changed}"
+            if (
+                old
+                and abs(new - old) / abs(old) > 0.10
+            ):
+                raise ValueError(
+                    f"Revisión superior al 10% "
+                    f"en {year}"
+                )
+
+        # Conservar el histórico y actualizar.
+        combined = {
+            **previous,
+            **fresh,
+        }
+
+        before = (
+            OUTPUT.read_text(
+                encoding="utf-8-sig"
+            )
+            if OUTPUT.exists()
+            else ""
+        )
+
+        output = io.StringIO()
+
+        writer = csv.DictWriter(
+            output,
+            fieldnames=FIELDS,
+            lineterminator="\n",
+        )
+
+        writer.writeheader()
+
+        for year in sorted(combined):
+            writer.writerow({
+                k: combined[year].get(k, "")
+                for k in FIELDS
+            })
+
+        after = output.getvalue()
+
+        changed = after != before
+
+        if changed:
+            OUTPUT.write_text(
+                after,
+                encoding="utf-8",
             )
 
-            return 0
+        write_status(
+            "actualizado"
+            if changed
+            else "sin_cambios",
+            fuente=origin,
+            primer_anio=min(combined),
+            ultimo_anio=max(combined),
+            anios_descargados=len(fresh),
+        )
 
-        except Exception as exc:
-            errors[url] = (
+        print(
+            f"CSVM: validado "
+            f"{min(fresh)}-{max(fresh)}; "
+            f"cambios={changed}"
+        )
+
+        return 0
+
+    except Exception as exc:
+
+        write_status(
+            "conservado_sin_cambio",
+            error=(
                 f"{type(exc).__name__}: {exc}"
-            )
+            ),
+        )
 
-    status(
-        status="conservado_sin_cambio",
-        ultimo_anio=max(previous),
-        error="No se obtuvo una tabla oficial validada",
-        intentos=errors,
-    )
+        print(
+            "CSVM: NO actualizada; "
+            f"históricos conservados: {exc}",
+            file=sys.stderr,
+        )
 
-    print(
-        "CSVM: NO actualizada; "
-        "datos históricos conservados",
-        file=sys.stderr,
-    )
-
-    print(
-        json.dumps(
-            errors,
-            ensure_ascii=False,
-            indent=2,
-        ),
-        file=sys.stderr,
-    )
-
-    return 1
+        return 1
 
 
 if __name__ == "__main__":
