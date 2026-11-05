@@ -1,12 +1,12 @@
 {
   "group": "ruv",
-  "run_at_utc": "2026-11-05T15:21:10.142906+00:00",
+  "run_at_utc": "2026-11-05T15:26:51.581179+00:00",
   "results": [
     {
       "script": "update_ruv_flow.py",
       "group": null,
-      "exit_code": 1,
-      "status": "error"
+      "exit_code": 0,
+      "status": "ok"
     },
     {
       "script": "update_ruv_produccion.py",
@@ -21,7 +21,5 @@
       "status": "ok"
     }
   ],
-  "failed": [
-    "update_ruv_flow.py"
-  ]
+  "failed": []
 }
