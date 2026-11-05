@@ -1,7 +1,7 @@
 window.RUV_PRODUCTION = {
   "source": "SEDATU / SNIIV / RUV",
   "endpoint": "https://sniiv.sedatu.gob.mx/api/CuboAPI/GetProduccion",
-  "generated_at": "2026-11-05T15:10:12.354611+00:00",
+  "generated_at": "2026-11-05T15:15:47.321129+00:00",
   "latest_period": "2026-08",
   "fallback": false,
   "fallback_note": "Respaldo actualizado automáticamente con API SNIIV; años históricos previos conservados.",
