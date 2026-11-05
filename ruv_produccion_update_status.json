@@ -1,6 +1,6 @@
 {
   "status": "ok",
-  "updated_at": "2026-11-05T15:15:47.321842+00:00",
+  "updated_at": "2026-11-05T15:21:07.358633+00:00",
   "latest_period": "2026-08",
   "source_url": "https://sniiv.sedatu.gob.mx/api/CuboAPI/GetProduccion/2016,2026/00/000/anio,mes,segmento",
   "years_received": [
