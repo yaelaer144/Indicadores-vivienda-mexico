@@ -1,17 +1,17 @@
 {
   "status": "ok",
-  "updated_at": "2026-11-04T18:39:46",
+  "updated_at": "2026-11-05T15:01:18",
   "rows": [
     {
       "indicador": "ruv_inventory",
-      "valor": 410154,
-      "periodo": "2026-07-31",
+      "valor": 411250,
+      "periodo": "2026-08-31",
       "fuente": "SEDATU / SNIIV · Inventario de vivienda"
     },
     {
       "indicador": "financing_total",
-      "valor": 517352,
-      "periodo": "2026-07-31",
+      "valor": 616837,
+      "periodo": "2026-08-31",
       "fuente": "SEDATU / SNIIV · Financiamientos"
     }
   ]

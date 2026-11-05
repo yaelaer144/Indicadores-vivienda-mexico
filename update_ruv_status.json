@@ -1,0 +1,28 @@
+{
+  "group": "ruv",
+  "run_at_utc": "2026-11-05T15:01:18.429444+00:00",
+  "results": [
+    {
+      "script": "update_ruv_flow.py",
+      "group": null,
+      "exit_code": 1,
+      "status": "error"
+    },
+    {
+      "script": "update_ruv_produccion.py",
+      "group": null,
+      "exit_code": 1,
+      "status": "error"
+    },
+    {
+      "script": "update_sniiv_kpis.py",
+      "group": null,
+      "exit_code": 0,
+      "status": "ok"
+    }
+  ],
+  "failed": [
+    "update_ruv_flow.py",
+    "update_ruv_produccion.py"
+  ]
+}
