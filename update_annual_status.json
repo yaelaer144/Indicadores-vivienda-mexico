@@ -1,0 +1,15 @@
+{
+  "group": "annual",
+  "run_at_utc": "2026-11-05T15:50:12.584709+00:00",
+  "results": [
+    {
+      "script": "update_csvm_vivienda.py",
+      "group": null,
+      "exit_code": 1,
+      "status": "error"
+    }
+  ],
+  "failed": [
+    "update_csvm_vivienda.py"
+  ]
+}
