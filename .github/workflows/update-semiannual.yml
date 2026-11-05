@@ -2,7 +2,7 @@ name: Revisión semestral condiciones habitacionales
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 13 20 4,10 *'
+    - cron: '30 13 20 * *'  # Revisión mensual; ENIGH y carencias solo cambian al publicarse
 permissions:
   contents: write
 concurrency:
