@@ -188,15 +188,19 @@
         source:pick(r,['fuente','source']),
         url:pick(r,['url','enlace','source_url'])
       })).filter(x=>x.stage&&x.period&&x.housing!=null);
-      const periods=[...new Set(normalized.map(x=>x.period))].sort();
-      const latestPeriod=periods.at(-1)||null;
-      const latestRows=normalized.filter(x=>x.period===latestPeriod);
+      // Selecciona el último corte de CADA etapa, porque los comunicados
+      // no siempre informan las tres cifras en la misma fecha.
+      const stages=['Contratadas','En construcción','Entregadas','Meta sexenal'];
+      const latestRows=stages.map(stage=>normalized.filter(x=>x.stage===stage)
+        .sort((a,b)=>b.period.localeCompare(a.period))[0]).filter(Boolean);
+      const latestPeriod=latestRows.map(x=>x.period).sort().at(-1)||null;
+      const first=latestRows.find(x=>x.stage==='Contratadas')||latestRows[0];
       D.production.pvb={
         period:latestPeriod,
         rows:latestRows,
         history:normalized.sort((a,b)=>String(a.period).localeCompare(String(b.period))),
-        source:latestRows.find(x=>x.source)?.source||null,
-        url:latestRows.find(x=>x.url)?.url||null
+        source:first?.source||null,
+        url:first?.url||null
       };
     } else {
       D.production.pvb={period:null,rows:[],history:[],source:null,url:null};
