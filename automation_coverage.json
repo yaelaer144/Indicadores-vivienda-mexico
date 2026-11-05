@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-05T16:11:38",
+  "generated_at": "2026-11-05T16:55:14",
   "objetivo": "Preferencia 2016; alternativa 2018 cuando la serie validada no tenga histórico anterior o cambie metodología",
   "series": [
     {
@@ -168,9 +168,9 @@
       "archivo": "csvm_pib_vivienda_anual.csv",
       "frecuencia": "anual",
       "objetivo_inicio": "2016",
-      "primer_periodo": "2013",
+      "primer_periodo": "2003",
       "ultimo_periodo": "2024",
-      "observaciones": 12,
+      "observaciones": 22,
       "cobertura_objetivo": "completo"
     }
   ],

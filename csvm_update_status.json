@@ -1,10 +1,8 @@
 {
-  "updated_at_utc": "2026-11-05T16:11:38.384150+00:00",
-  "status": "conservado_sin_cambio",
+  "status": "actualizado",
+  "updated_at_utc": "2026-11-05T16:55:14.602223+00:00",
+  "fuente": "https://www.inegi.org.mx/app/tabulados/default.aspx?pr=24&vr=1&in=5&tp=20&wr=1&cno=1&idrt=3268&opc=p",
+  "primer_anio": 2003,
   "ultimo_anio": 2024,
-  "error": "No se obtuvo una tabla oficial validada",
-  "intentos": {
-    "https://www.inegi.org.mx/temas/viviendasat/": "ValueError: La fuente no publicó las 6 variables compatibles con el dashboard",
-    "https://www.inegi.org.mx/app/tabulados/default.aspx?cno=1&idrt=3268&in=28&opc=p&pr=24&tp=20&vr=1&wr=1": "ValueError: La fuente no publicó las 6 variables compatibles con el dashboard"
-  }
+  "anios_descargados": 22
 }
