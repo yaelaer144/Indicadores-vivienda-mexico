@@ -50,6 +50,45 @@ def integer(value, label):
     return int(round(number))
 
 
+def parse_month(value):
+    """Convierte nombres de meses o números a un mes válido."""
+
+    import unicodedata
+
+    meses = {
+        "enero": 1,
+        "febrero": 2,
+        "marzo": 3,
+        "abril": 4,
+        "mayo": 5,
+        "junio": 6,
+        "julio": 7,
+        "agosto": 8,
+        "septiembre": 9,
+        "setiembre": 9,
+        "octubre": 10,
+        "noviembre": 11,
+        "diciembre": 12,
+    }
+
+    if isinstance(value, str):
+        texto = value.strip().lower()
+
+        texto = "".join(
+            c for c in unicodedata.normalize("NFKD", texto)
+            if not unicodedata.combining(c)
+        )
+
+        if texto in meses:
+            return meses[texto]
+
+    numero = integer(value, "mes")
+
+    if not 1 <= numero <= 12:
+        raise ValueError(f"Mes inválido: {value}")
+
+    return numero
+
 def load_old():
     if JSON.exists(): return json.loads(JSON.read_text(encoding='utf-8-sig'))
     if JS.exists():
