@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-11-05T18:22:32.422600+00:00",
+  "checked_at_utc": "2026-11-05T18:34:41.636229+00:00",
   "tenencia": {
     "estado": "actualizado",
     "anio": 2024,
@@ -7,12 +7,8 @@
     "fuente": "INEGI ENIGH microdatos VIVIENDAS"
   },
   "carencias": {
-    "estado": "conservado_sin_cambio",
-    "ultimo_anio": 2024,
-    "detalle": [
-      "2026: Stream has ended unexpectedly",
-      "2024: cryptography>=3.1 is required for AES algorithm"
-    ]
+    "estado": "sin_nuevo_levantamiento",
+    "ultimo_anio": 2024
   },
   "conavi": {
     "estado": "conservado_pendiente_fuente_estructurada",
