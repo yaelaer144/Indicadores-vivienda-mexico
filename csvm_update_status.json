@@ -1,0 +1,10 @@
+{
+  "updated_at_utc": "2026-11-05T16:11:38.384150+00:00",
+  "status": "conservado_sin_cambio",
+  "ultimo_anio": 2024,
+  "error": "No se obtuvo una tabla oficial validada",
+  "intentos": {
+    "https://www.inegi.org.mx/temas/viviendasat/": "ValueError: La fuente no publicó las 6 variables compatibles con el dashboard",
+    "https://www.inegi.org.mx/app/tabulados/default.aspx?cno=1&idrt=3268&in=28&opc=p&pr=24&tp=20&vr=1&wr=1": "ValueError: La fuente no publicó las 6 variables compatibles con el dashboard"
+  }
+}
