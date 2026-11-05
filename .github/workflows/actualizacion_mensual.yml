@@ -1,5 +1,5 @@
 
-name: Publicaciones mensuales INEGI, IMSS y RUV
+name: Publicaciones mensuales INEGI e IMSS
 
 on:
   workflow_dispatch:
@@ -35,7 +35,7 @@ jobs:
         env:
           INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
         run: |
-          python scripts/run_group.py monthly update_inegi_series.py:monthly update_remaining_inegi.py update_ruv_flow.py update_ruv_produccion.py update_sniiv_kpis.py
+          python scripts/run_group.py monthly update_inegi_series.py:monthly update_remaining_inegi.py
 
       - name: Regenerar datos y auditar histórico
         if: always()
