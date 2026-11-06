@@ -438,6 +438,16 @@
         ],{beginAtZero:false,yTitle:'Porcentaje (%)',suffix:'%',decimals:1});
       }
 
+      // Series SNIIV: necesidad y rezago habitacional (unidades: viviendas).
+      const sniiv=D.conditions.sniiv||{};
+      const sy=Object.keys(sniiv).sort();
+      if(sy.length){
+        line('cond-sniiv-rezago',sy,[
+          ds('Necesidad de vivienda',sy.map(y=>sniiv[y].nacional?.necesidad_vivienda??null),brand),
+          ds('Rezago habitacional',sy.map(y=>sniiv[y].nacional?.rezago_habitacional??null),blue)
+        ],{beginAtZero:false,yTitle:'Viviendas estimadas',decimals:0});
+      }
+
       // Condiciones habitacionales
       const cy=D.conditions.history_years||[];
       if(cy.length){

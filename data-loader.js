@@ -170,10 +170,21 @@
       D.prices.bridge_rate=rows.map(x=>x.rate);
     }
     if(conditionsSummaryRows.length){
-      const m={}; conditionsSummaryRows.forEach(r=>m[pick(r,['indicador'])]=num(pick(r,['valor'])));
-      D.conditions.summary_year=num(pick(conditionsSummaryRows[0]||{},['anio','year']))||D.conditions.tenure?.year||2024;
+      const m={}; conditionsSummaryRows.forEach(r=>{ if(!String(pick(r,['indicador'])||'').startsWith('sniiv_')) m[pick(r,['indicador'])]=num(pick(r,['valor'])); });
+      D.conditions.summary_year=num(pick(conditionsSummaryRows.find(r=>!String(pick(r,['indicador'])||'').startsWith('sniiv_'))||conditionsSummaryRows[0]||{},['anio','year']))||D.conditions.tenure?.year||2024;
       D.conditions.materials={walls_inadequate:m.materiales_muros_inadecuados_pct,roofs_inadequate:m.materiales_techos_inadecuados_pct,floor_inadequate:m.materiales_pisos_inadecuados_pct};
       D.conditions.qualitative_deficit={homes:m.deficit_cualitativo_viviendas,pct:m.deficit_cualitativo_pct,components:{materials_pct:m.deficit_materiales_pct,spaces_pct:m.deficit_espacios_pct,services_pct:m.deficit_servicios_pct},components_homes:{materials:m.deficit_materiales_viviendas,spaces:m.deficit_espacios_viviendas,services:m.deficit_servicios_viviendas}};
+      const sniiv={};
+      conditionsSummaryRows.filter(r=>String(pick(r,['indicador'])||'').startsWith('sniiv_')).forEach(r=>{
+        const year=String(pick(r,['anio'])); const indicator=String(pick(r,['indicador']));
+        const match=indicator.match(/^sniiv_(necesidad_vivienda|rezago_habitacional|deficit_hogares|deficit_personas)_(nacional|ent_\d+)$/);
+        if(!match) return;
+        const [,metric,scope]=match; sniiv[year]??={nacional:{},entidades:{}};
+        const target=scope==='nacional'?sniiv[year].nacional:sniiv[year].entidades;
+        if(scope==='nacional') target[metric]=num(pick(r,['valor']));
+        else { const code=scope.replace('ent_',''); target[code]??={}; target[code][metric]=num(pick(r,['valor'])); }
+      });
+      if(Object.keys(sniiv).length) D.conditions.sniiv=sniiv;
     }
 
 
