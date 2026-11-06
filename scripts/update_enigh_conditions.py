@@ -448,24 +448,72 @@ def update_carencias():
 
 
 def update_conavi():
-    # No inferir años ni porcentajes de números sueltos
-    # extraídos de un PDF.
-    rows = read_csv(CSV_CONAVI)
+    """Descarga series nacionales y estatales del CSV oficial SNIIV.
 
-    years = sorted({
-        int(r['anio'])
-        for r in rows
-        if r.get('anio', '').isdigit()
-    })
-
+    Reutiliza condiciones_resumen_2024.csv; no crea otro CSV.
+    Las variables SNIIV se identifican con prefijo sniiv_ para no
+    confundirlas con los componentes cualitativos CONAVI ya existentes.
+    """
+    urls = {
+        2022: 'https://sistemas.sedatu.gob.mx/repositorio/proxy/alfresco-noauth/api/internal/shared/node/CaZN3RTNTHWY6x9H3pnrrQ/content/Deficit_Vivienda.csv',
+        2024: 'https://sistemas.sedatu.gob.mx/repositorio/proxy/alfresco-noauth/api/internal/shared/node/QhMxm58hTpmPtCMLKpaJcg/content/Deficit_Vivienda.csv',
+    }
+    columns = ['anio', 'indicador', 'valor', 'unidad', 'fuente']
+    existing = read_csv(CSV_CONAVI)
+    # Solo sustituir las filas generadas por esta rutina.
+    preserved = [r for r in existing if not str(r.get('indicador', '')).startswith('sniiv_')]
+    generated = []
+    metrics = {
+        'nec_viv': ('necesidad_vivienda', 'viviendas'),
+        'rezago': ('rezago_habitacional', 'viviendas'),
+        'deficit_h': ('deficit_hogares', 'hogares'),
+        'deficit_p': ('deficit_personas', 'personas'),
+    }
+    years_ok = []
+    state_count = {}
+    for year, url in urls.items():
+        raw = fetch(url)
+        if not raw.lstrip().startswith(b'anio') and b'entidad' not in raw[:500].lower():
+            raise ValueError(f'SNIIV {year}: respuesta no parece CSV')
+        text = raw.decode('utf-8-sig', errors='replace')
+        sample = text[:4096]
+        try:
+            dialect = csv.Sniffer().sniff(sample, delimiters=',;\t|')
+        except csv.Error:
+            dialect = csv.excel
+        rows = list(csv.DictReader(io.StringIO(text), dialect=dialect))
+        required = {'anio', 'ent', 'entidad', *metrics.keys()}
+        if not rows or not required.issubset(set(rows[0])):
+            raise ValueError(f'SNIIV {year}: estructura inesperada')
+        national = [r for r in rows if r.get('ent') == '00']
+        states = [r for r in rows if r.get('ent') != '00']
+        if len(national) != 1 or len(states) < 30:
+            raise ValueError(f'SNIIV {year}: cobertura nacional/estatal incompleta')
+        for r in rows:
+            for field, (name, unit) in metrics.items():
+                value = number(r.get(field))
+                if value is None or value < 0:
+                    raise ValueError(f'SNIIV {year}: valor inválido {field}')
+                scope = 'nacional' if r.get('ent') == '00' else f"ent_{r.get('ent')}"
+                generated.append({
+                    'anio': str(year),
+                    'indicador': f'sniiv_{name}_{scope}',
+                    'valor': str(round(value)),
+                    'unidad': unit,
+                    'fuente': f'SNIIV · Déficit de vivienda {year} · {r.get("entidad", "")}'
+                })
+        years_ok.append(year)
+        state_count[str(year)] = len(states)
+    # Evitar reemplazo parcial: escribir solo después de validar ambos años.
+    write_csv(CSV_CONAVI, columns, preserved + generated)
     return {
-        'estado': 'conservado_pendiente_fuente_estructurada',
-        'ultimo_anio': max(years) if years else None,
-        'detalle': (
-            'CONAVI/SIESCO: se conserva el último valor; '
-            'no se reemplazan indicadores por extracción '
-            'ambigua de PDF'
-        )
+        'estado': 'actualizado',
+        'anios': years_ok,
+        'registros_sniiv': len(generated),
+        'entidades_por_anio': state_count,
+        'indicadores': list(metrics),
+        'archivo_salida': CSV_CONAVI.name,
+        'nota': 'Series SNIIV separadas de los indicadores cualitativos CONAVI; no se mezclan definiciones.'
     }
 
 
