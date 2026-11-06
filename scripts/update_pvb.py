@@ -3,7 +3,8 @@
 
 Solo agrega cifras de alcance nacional verificables; nunca sustituye 'entregadas'
 por 'asignadas', 'colocadas', cifras regionales o de una institución.
-No altera series CONAVI/SNIIV (se actualizan por su propio extractor).
+Vigila por separado la cohorte CONAVI-PVB en los comunicados oficiales.
+No confunde reserva territorial general, metas ni totales nacionales con la cohorte reportada.
 """
 import csv
 import html
@@ -19,8 +20,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'pvb_avance.csv'
 STATUS = ROOT / 'pvb_update_status.json'
+SNIIV = ROOT / 'sniiv_kpis.csv'
+SNIIV_FIELDS = ['indicador','valor','periodo','fuente']
+CONAVI_METRICS = ('pvb_conavi_housing','pvb_conavi_hectares','pvb_conavi_predios')
+CONAVI_SEED = 'https://www.gob.mx/presidencia/articulos/version-estenografica-conferencia-de-prensa-de-la-presidenta-claudia-sheinbaum-pardo-del-15-de-junio-de-2026'
 FIELDS = ['etapa', 'viviendas', 'periodo', 'relacion', 'fuente', 'url']
 SEED = [
+ CONAVI_SEED,
  'https://www.gob.mx/presidencia/prensa/vivienda-para-el-bienestar-hay-274-mil-en-construccion-en-el-pais-el-programa-atiende-a-cerca-de-7-millones-de-personas-presidenta',
  'https://www.gob.mx/sedatu/prensa/el-programa-de-vivienda-para-el-bienestar-avanza-hay-667-mil-viviendas-contratadas-y-277-mil-en-proceso-de-obra-sedatu',
  'https://www.gob.mx/presidencia/prensa/vivienda-para-el-bienestar-beneficiara-a-12-millones-de-familias-en-el-sexenio-y-significa-cerca-de-1-2-del-pib-anual-presidenta',
@@ -178,18 +184,100 @@ def discover():
    except Exception:pass
  return list(dict.fromkeys(urls))[:35]
 
+def extract_conavi_cohort(raw, url):
+    """Identifica SOLO la cohorte anual CONAVI con viviendas, hectáreas y predios.
+
+    No acepta reservas acumuladas ni metas. Requiere las tres cifras en un
+    mismo fragmento y una referencia explícita a la cohorte del año.
+    """
+    parser = Blocks(); parser.feed(raw)
+    plain = normalize(' '.join(parser.items))
+    pub = publication_date(raw)
+    if not pub or pub > date.today().isoformat():
+        return None
+    if 'conavi' not in plain or 'vivienda' not in plain:
+        return None
+
+    # Preferimos la sección de rendición de cuentas de CONAVI, no el resto
+    # de la conferencia (donde hay totales de INFONAVIT y SEDATU).
+    marker = re.search(r'director general de la comision nacional de vivienda', plain)
+    if marker:
+        plain = plain[marker.start():]
+
+    for match in re.finditer(r'(?:otros?|nuevos?|suman|sumamos)\s+('+N+r')\s+predios', plain):
+        predios = parse_num(match.group(1))
+        after = plain[match.end():match.end()+220]
+        hm = re.search(r'(?:para\s+que\s+)?(?:suman?|sumen?|son|equivalentes?\s+a|de)\s+('+N+r')\s+hectareas', after)
+        vm = re.search(r'(?:que\s+)?(?:son|seran|para|sum(?:an|en)?)\s+('+N+r')\s+viviendas', after)
+        if not (hm and vm):
+            continue
+        hectares = parse_num(hm.group(1))
+        housing = parse_num(vm.group(1))
+        before = plain[max(0, match.start()-500):match.start()]
+        surrounding = plain[max(0,match.start()-500):match.end()+400]
+        # Cohorte anual identificada, no el total de reserva acumulada.
+        yearly = re.search(r'(?:para este periodo|en lo que va del|para el)\s+(20\d{2})', before)
+        if not yearly:
+            continue
+        cohort_year = int(yearly.group(1))
+        if cohort_year != int(pub[:4]):
+            continue
+        if any(x is None for x in (predios, hectares, housing)):
+            continue
+        if not (10 <= predios <= 2000 and 1 <= hectares <= 10000 and 1000 <= housing <= 500000):
+            continue
+        if not re.search(r'contrat|obra|proyectos?|trabajos preliminares', surrounding):
+            continue
+        return pub, {'pvb_conavi_housing':housing,
+                     'pvb_conavi_hectares':hectares,
+                     'pvb_conavi_predios':predios}, url
+    return None
+
+
+def update_conavi_kpis(found):
+    """Conserva métricas del SNIIV y escribe la última cohorte CONAVI validada."""
+    existing = []
+    if SNIIV.exists():
+        with SNIIV.open(encoding='utf-8-sig', newline='') as f:
+            existing = list(csv.DictReader(f))
+    candidates = sorted(found, key=lambda x:x[0], reverse=True)
+    latest = candidates[0] if candidates else None
+    current = {r.get('indicador'):r for r in existing}
+    current_dates = [r.get('periodo','') for r in existing if r.get('indicador') in CONAVI_METRICS]
+    # Jamás reemplazar una publicación nueva por otra más antigua.
+    if latest and (not current_dates or latest[0] > max(current_dates)):
+        pub, vals, url = latest
+        existing = [r for r in existing if r.get('indicador') not in CONAVI_METRICS]
+        existing.extend({'indicador':metric, 'valor':value, 'periodo':pub,
+                         'fuente':'CONAVI / Presidencia · '+url}
+                        for metric, value in vals.items())
+        temp=SNIIV.with_suffix('.csv.tmp')
+        with temp.open('w',encoding='utf-8-sig',newline='') as f:
+            writer=csv.DictWriter(f,fieldnames=SNIIV_FIELDS,extrasaction='ignore')
+            writer.writeheader(); writer.writerows(existing)
+        temp.replace(SNIIV)
+        return {'estado':'actualizado','periodo':pub,'valores':vals,'fuente':url}
+    if current_dates:
+        return {'estado':'conservado_sin_cambio','periodo':max(current_dates),
+                'nota':'No hay nueva cohorte CONAVI-PVB validada para las tres métricas.'}
+    return {'estado':'pendiente_fuente_validada',
+            'nota':'No se detectó la cohorte anual completa. No se alteraron valores de respaldo.'}
+
+
 def main():
  existing=[]
  if OUT.exists():
   with OUT.open(encoding='utf-8-sig',newline='') as f:existing=list(csv.DictReader(f))
  seen={(r.get('periodo'),r.get('etapa')) for r in existing}
- found=[];errors=[]
+ found=[];conavi_found=[];errors=[]
  for url in discover():
   if not re.match(r'^https://www\.gob\.mx/(?:sedatu|presidencia)/',url):continue
   try:
    content,realurl=request(url)
    result=extract(content,realurl)
    if result:found.append(result)
+   scoped=extract_conavi_cohort(content,realurl)
+   if scoped:conavi_found.append(scoped)
   except Exception as ex:errors.append(f'{url[:110]}: {type(ex).__name__}')
  added=[]
  # Un periodo-etapa solo se registra cuando está validado; conservar cualquier histórico existente.
@@ -207,9 +295,10 @@ def main():
   with tmp.open('w',encoding='utf-8-sig',newline='') as f:
    writer=csv.DictWriter(f,fieldnames=FIELDS,extrasaction='ignore');writer.writeheader();writer.writerows(existing)
   tmp.replace(OUT)
- status={'status':'actualizado' if added else 'sin_novedades_verificables',
+ conavi_status=update_conavi_kpis(conavi_found)
+ status={'conavi':conavi_status,'status':'actualizado' if added or conavi_status['estado']=='actualizado' else 'sin_novedades_verificables',
          'checked_at_utc':datetime.now(timezone.utc).isoformat(),
-         'articulos_validados':len(found),'nuevas_filas':added,'errores_consulta':errors[:15],
+         'articulos_validados':len(found),'articulos_conavi_validados':len(conavi_found),'nuevas_filas':added,'errores_consulta':errors[:15],
          'ultimo_periodo':max((r.get('periodo','') for r in existing),default=None),
          'nota':'Solo cifras nacionales de contratadas y en obra verificadas juntas. No se equiparan asignadas, colocadas y entregadas.'}
  STATUS.write_text(json.dumps(status,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
