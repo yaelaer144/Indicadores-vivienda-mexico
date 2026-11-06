@@ -37,6 +37,10 @@ def main():
 
     temporary.replace(target)
 
+    # Actualiza la fecha de referencia y la auditoría desde los estados reales.
+    import subprocess, sys
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "build_dashboard_updates.py")], check=True)
+
 
 if __name__ == "__main__":
     main()
