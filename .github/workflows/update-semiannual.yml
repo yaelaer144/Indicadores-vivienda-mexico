@@ -29,6 +29,73 @@ jobs:
       - name: Instalar dependencias
         run: python -m pip install openpyxl pypdf "cryptography>=3.1"
 
+      - name: Inspeccionar CSV oficial de deficit SNIIV
+        run: |
+          python - <<'PY'
+          import csv
+          import io
+          import urllib.request
+
+          fuentes = {
+              "2024": (
+                  "https://sistemas.sedatu.gob.mx/repositorio/"
+                  "proxy/alfresco-noauth/api/internal/shared/"
+                  "node/QhMxm58hTpmPtCMLKpaJcg/content/"
+                  "Deficit_Vivienda.csv"
+              ),
+              "2022": (
+                  "https://sistemas.sedatu.gob.mx/repositorio/"
+                  "proxy/alfresco-noauth/api/internal/shared/"
+                  "node/CaZN3RTNTHWY6x9H3pnrrQ/content/"
+                  "Deficit_Vivienda.csv"
+              ),
+          }
+
+          for anio, url in fuentes.items():
+              print(f"\n=== SNIIV {anio} ===")
+
+              try:
+                  req = urllib.request.Request(
+                      url,
+                      headers={"User-Agent": "Mozilla/5.0"}
+                  )
+
+                  with urllib.request.urlopen(
+                      req, timeout=60
+                  ) as response:
+                      data = response.read()
+
+                  print("Bytes:", len(data))
+
+                  texto = data.decode(
+                      "utf-8-sig", errors="replace"
+                  )
+
+                  if texto.lstrip().startswith("<"):
+                      raise ValueError(
+                          "La respuesta parece HTML, no CSV"
+                      )
+
+                  dialecto = csv.Sniffer().sniff(
+                      texto[:4096], delimiters=",;\t|"
+                  )
+
+                  lector = csv.DictReader(
+                      io.StringIO(texto),
+                      dialect=dialecto
+                  )
+
+                  print("Columnas:", lector.fieldnames)
+
+                  for i, fila in enumerate(lector):
+                      if i >= 3:
+                          break
+                      print(f"Fila {i+1}:", fila)
+
+              except Exception as e:
+                  print("ERROR:", type(e).__name__, str(e))
+          PY
+
       - name: Ejecutar consultas y registrar fallos
         env:
           INEGI_API_TOKEN: ${{ secrets.INEGI_API_TOKEN }}
