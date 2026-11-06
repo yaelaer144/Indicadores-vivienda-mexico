@@ -9,11 +9,12 @@
   const fmtMonth=p=>{const m=String(p||'').match(/^(20\d{2})-(\d{2})$/);return m?`${MESES[Number(m[2])-1]} ${m[1]}`:String(p||'N/D');};
   const fmtQuarter=p=>{const m=String(p||'').match(/^(20\d{2})-T([1-4])$/);return m?`${m[2]}T ${m[1]}`:String(p||'N/D');};
   const fmtDate=p=>{const m=String(p||'').match(/^(20\d{2})-(\d{2})-(\d{2})$/);return m?`${Number(m[3])} ${MESES[Number(m[2])-1]} ${m[1]}`:String(p||'N/D');};
+  const fmtPeriod=p=>{const s=String(p||'');if(/^20\d{2}-T[1-4]$/.test(s))return fmtQuarter(s);if(/^20\d{2}-\d{2}$/.test(s))return fmtMonth(s);if(/^20\d{2}-\d{2}-\d{2}$/.test(s))return fmtDate(s);return s||'N/D';};
   const fmtVerification=iso=>{if(!iso)return 'pendiente';const d=new Date(iso);return Number.isNaN(d.getTime())?iso:new Intl.DateTimeFormat('es-MX',{dateStyle:'long',timeStyle:'short'}).format(d);};
   function runtimeStatus(){
     const line=document.getElementById('update-status-line');
     if(!line)return;
-    const latest=UP.latest_data_period||'sin periodo identificado';
+    const latest=fmtPeriod(UP.latest_data_period||'sin periodo identificado');
     const verified=UP.last_verification?fmtVerification(UP.last_verification):'sin verificación registrada';
     line.textContent=`Último periodo de información: ${latest} · Última verificación técnica: ${verified}`;
   }
@@ -42,16 +43,19 @@
   }
   function activity(){
     const s=D.summary;
-    const pibQ=(D.activity.pib_construction_quarterly||[]).at(-1)||{period:'2026-T2',value_mdp:s.vab_construction_2q26_mdp,yoy:s.vab_construction_yoy_2q26,share:s.pib_construction_share_2q26};
-    const igae=(D.activity.igae_monthly||[]).at(-1)||{period:'2026-06',index:s.igae_construction_jun26,yoy:s.igae_construction_yoy_jun26};
-    const ifb=(D.activity.ifb_monthly||[]).at(-1)||{period:'2026-05',yoy:-5.4,mom:-7.9};
+    const pibRows=(D.activity.pib_construction_quarterly||[]).filter(x=>/^20\d{2}-T[1-4]$/.test(x.period||'')).sort((a,b)=>a.period.localeCompare(b.period));
+    const pibQ=pibRows.at(-1)||{};
+    const igaeRows=(D.activity.igae_monthly||[]).filter(x=>/^20\d{2}-\d{2}$/.test(x.period||'')).sort((a,b)=>a.period.localeCompare(b.period));
+    const igae=igaeRows.at(-1)||{};
+    const ifbRows=(D.activity.ifb_monthly||[]).filter(x=>/^20\d{2}-\d{2}$/.test(x.period||'')).sort((a,b)=>a.period.localeCompare(b.period));
+    const ifb=ifbRows.at(-1)||{};
     const enecLast=(D.activity.enec_production||[]).at(-1);
     document.getElementById('page-activity').innerHTML=U.pageHead('Sector de construcción','Indicadores de construcción e inversión residencial respetando la frecuencia de publicación de cada fuente.','INEGI · mensual y trimestral')+
     `<div class="kpis">
-      ${U.kpi(`VAB de construcción · ${fmtQuarter(pibQ.period)}`,F.billonesFromMillions(pibQ.value_mdp),'serie original · precios constantes de 2018','billones de pesos anualizados','El Valor Agregado Bruto (VAB) de construcción se expresa en millones/billones de pesos anualizados a precios constantes de 2018; no equivale al PIB nominal ni al flujo sin anualizar del trimestre.')}
-      ${U.kpi(`PIB de construcción · ${fmtQuarter(pibQ.period)} · variación anual real`,F.pct(pibQ.yoy),'respecto al mismo trimestre del año anterior','porcentaje','El PIB real de la construcción permite observar la evolución del volumen de actividad del sector descontando el efecto de los precios.')}
-      ${U.kpi(`IGAE construcción · ${fmtMonth(igae.period)}`,F.pct(igae.yoy),'variación anual','porcentaje','El IGAE (Indicador Global de la Actividad Económica) permite seguir mensualmente la actividad de la construcción. ')}
-      ${U.kpi(`IFB · construcción residencial · ${fmtMonth(ifb.period)}`,F.pct(ifb.yoy),'variación anual · dato mensual','porcentaje','La IFB (Inversión Fija Bruta) permite seguir mensualmente la inversión asociada con la construcción residencial. La cifra corresponde a la variación respecto al mismo mes del año anterior.')}
+      ${U.kpi(`VAB de construcción · ${fmtQuarter(pibQ.period)}`,(Number.isFinite(pibQ.value_mdp)?F.billonesFromMillions(pibQ.value_mdp):'N/D'),'serie original · precios constantes de 2018','billones de pesos anualizados','El Valor Agregado Bruto (VAB) de construcción se expresa en millones/billones de pesos anualizados a precios constantes de 2018; no equivale al PIB nominal ni al flujo sin anualizar del trimestre.')}
+      ${U.kpi(`PIB de construcción · ${fmtQuarter(pibQ.period)} · variación anual real`,(Number.isFinite(pibQ.yoy)?F.pct(pibQ.yoy):'N/D'),'respecto al mismo trimestre del año anterior','porcentaje','El PIB real de la construcción permite observar la evolución del volumen de actividad del sector descontando el efecto de los precios.')}
+      ${U.kpi(`IGAE construcción · ${fmtMonth(igae.period)}`,(Number.isFinite(igae.yoy)?F.pct(igae.yoy):'N/D'),'variación anual','porcentaje','El IGAE (Indicador Global de la Actividad Económica) permite seguir mensualmente la actividad de la construcción. ')}
+      ${U.kpi(`IFB · construcción residencial · ${fmtMonth(ifb.period)}`,(Number.isFinite(ifb.yoy)?F.pct(ifb.yoy):'N/D'),'variación anual · dato mensual','porcentaje','La IFB (Inversión Fija Bruta) permite seguir mensualmente la inversión asociada con la construcción residencial. La cifra corresponde a la variación respecto al mismo mes del año anterior.')}
     </div>
     <div class="grid">
       ${U.dualCard('act-igae','act-igae-var','IGAE · construcción','Base 2018=100 · periodicidad mensual','<strong>Qué mide:</strong> seguimiento mensual de la actividad económica del sector construcción. <div class="note">La gráfica muestra exclusivamente la serie mensual del IGAE disponible en el dashboard, sin añadir una referencia anual de otra serie.</div>','Variación anual porcentual','Periodicidad mensual','Índice mensual con referencia 2018=100.','Variación porcentual respecto al mismo mes del año anterior.')}
