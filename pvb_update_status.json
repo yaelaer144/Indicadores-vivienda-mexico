@@ -1,7 +1,7 @@
 {
   "conavi": {
     "estado": "actualizado",
-    "periodo": "2026-11-03",
+    "periodo": "2026-11-05",
     "valores": {
       "pvb_conavi_housing": 73490,
       "pvb_conavi_hectares": 560,
@@ -10,7 +10,7 @@
     "fuente": "https://www.gob.mx/presidencia/articulos/version-estenografica-conferencia-de-prensa-de-la-presidenta-claudia-sheinbaum-pardo-del-15-de-junio-de-2026"
   },
   "status": "actualizado",
-  "checked_at_utc": "2026-11-06T17:45:58.973583+00:00",
+  "checked_at_utc": "2026-11-06T20:28:35.165440+00:00",
   "articulos_validados": 1,
   "articulos_conavi_validados": 2,
   "nuevas_filas": [],
