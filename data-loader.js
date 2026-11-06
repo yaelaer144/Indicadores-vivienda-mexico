@@ -368,14 +368,27 @@
       }
     }
     if(sniivKpiRows.length){
-      D.production.current=D.production.current||{}; D.production.current.periods=D.production.current.periods||{};
+      D.production.current=D.production.current||{};
+      D.production.current.periods=D.production.current.periods||{};
+      const latest=new Map();
       for(const r of sniivKpiRows){
-        const metric=String(pick(r,['indicador','metric'])||''); const value=num(pick(r,['valor','value'])); const period=pick(r,['periodo','period']);
-        if(metric==='ruv_inventory'){D.production.current.ruv_inventory_jun26=value;D.production.current.periods.ruv_inventory=period;}
-        if(metric==='financing_total'){D.production.current.financing_total_jun26=value;D.production.current.periods.financing=period;}
-        if(metric==='pvb_conavi_housing'){D.production.current.pvb_housing_jun15_26=value;D.production.current.periods.pvb=period;}
-        if(metric==='pvb_conavi_hectares'){D.production.current.pvb_hectares_jun15_26=value;D.production.current.periods.pvb=period;}
-        if(metric==='pvb_conavi_predios'){D.production.current.pvb_predios_jun15_26=value;D.production.current.periods.pvb=period;}
+        const metric=String(pick(r,['indicador','metric'])||'');
+        const value=num(pick(r,['valor','value']));
+        const period=String(pick(r,['periodo','period'])||'');
+        if(!metric||!Number.isFinite(value)||value<0||!/^20\d{2}-\d{2}-\d{2}$/.test(period))continue;
+        if(!latest.has(metric)||period>latest.get(metric).period)latest.set(metric,{value,period});
+      }
+      const inv=latest.get('ruv_inventory'),fin=latest.get('financing_total');
+      if(inv){D.production.current.ruv_inventory_jun26=inv.value;D.production.current.periods.ruv_inventory=inv.period;}
+      if(fin){D.production.current.financing_total_jun26=fin.value;D.production.current.periods.financing=fin.period;}
+      const keys=['pvb_conavi_housing','pvb_conavi_hectares','pvb_conavi_predios'];
+      const vals=keys.map(k=>latest.get(k));
+      // Un único corte validado para las tres cifras: sin mezclar años o cohortes.
+      if(vals.every(Boolean)&&new Set(vals.map(x=>x.period)).size===1){
+        D.production.current.pvb_housing_jun15_26=vals[0].value;
+        D.production.current.pvb_hectares_jun15_26=vals[1].value;
+        D.production.current.pvb_predios_jun15_26=vals[2].value;
+        D.production.current.periods.pvb=vals[0].period;
       }
     }
     if((D.prices.shf_quarterly||[]).length){ const q=D.prices.shf_quarterly.at(-1); D.prices.current={...(D.prices.current||{}),yoy:q.yoy,yoy_period:q.period}; }

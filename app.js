@@ -130,7 +130,7 @@
     const pvbSourceHtml=pvb.url?`<a href="${pvb.url}" target="_blank" rel="noopener">${pvbSource}</a>`:pvbSource;
     const ruvCutoff=c.periods?.ruv_inventory||c.ruv_inventory_period||null;
     const financingCutoff=c.periods?.financing||c.financing_period||null;
-    const pvbConaviCutoff=c.periods?.pvb||c.pvb_conavi_period||pvb.period||null;
+    const pvbConaviCutoff=c.periods?.pvb||c.pvb_conavi_period||null;
     const flowYears=(D.production.years||[]).filter(Number.isFinite);
     const flowRange=flowYears.length?`${flowYears[0]}–${flowYears.at(-1)}`:'histórico disponible';
     document.getElementById('page-production').innerHTML=U.pageHead('Producción de vivienda','Indicadores para seguir el flujo de producción de vivienda, desde el registro hasta el inicio y la terminación de obra. Aquí se concentra también la lectura del PIB de vivienda.','Cuenta Satélite de Vivienda · ENEC · RUV · SNIIV · CONAVI · PVB')+
