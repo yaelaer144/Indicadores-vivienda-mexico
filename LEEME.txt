@@ -1,7 +1,20 @@
-IGAE / IMAI — DATOS EXTRAIDOS DE TABULADOS OFICIALES
-- Los archivos igae_construccion_mensual.csv e imai_construccion_mensual.csv estan preparados para la raiz del repositorio.
-- imai_construccion_subsectores_mensual.csv añade edificación (236), obras civiles (237) y especializados (238).
-- Cada fuente conserva su ultimo mes publicado; se registran revisiones en diagnostico_igae_imai.json.
-- prepare_igae_imai.py transforma archivos oficiales descargados, pero NO automatiza su descarga.
-- NO se ha verificado URL estable o ID API para actualización autónoma desde GitHub.
-- Para desplegar cambios, revisar archivos y ejecutar python scripts/rebuild_local_data.py; confirmar que el dashboard lee estas columnas.
+ACTUALIZACION DE RECUADROS Y AUDITORIA DEL DASHBOARD
+
+Archivos incluidos:
+- app.js: los cuatro recuadros del resumen toman la ultima observacion disponible de sus series; se eliminan valores de respaldo fijos.
+- index.html: cambia las versiones de cache de app.js y updates.js.
+- scripts/build_dashboard_updates.py: construye updates.js a partir de los archivos *_update_status.json y de las series CSV existentes.
+- scripts/rebuild_local_data.py: al reconstruir local-data.js, ejecuta tambien el generador de metadatos.
+- updates.js: resultado generado con los estados y periodos disponibles en el repositorio al preparar este paquete. Se vuelve a generar automaticamente.
+
+Instalacion:
+1. Reemplazar cada archivo en la misma ruta del repositorio.
+2. Hacer commit de los cambios.
+3. Ejecutar cualquier workflow que llegue al paso `python scripts/rebuild_local_data.py`.
+4. Revisar el archivo updates.js generado y la linea superior del dashboard.
+
+Criterios:
+- El ultimo periodo estadistico y la ultima verificacion tecnica se muestran por separado.
+- La fecha de verificacion procede de los timestamps presentes en los archivos de estado; no se inventa una fecha si falta.
+- Los recuadros ejecutivos usan las observaciones disponibles en sus series. Si falta un dato, muestran N/D en vez de usar cifras fijas antiguas.
+- El estado de cada fuente se resume a partir de su archivo de estado. Esto es una auditoria de los registros existentes, no una prueba independiente de disponibilidad en tiempo real.

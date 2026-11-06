@@ -12,20 +12,28 @@
   const fmtVerification=iso=>{if(!iso)return 'pendiente';const d=new Date(iso);return Number.isNaN(d.getTime())?iso:new Intl.DateTimeFormat('es-MX',{dateStyle:'long',timeStyle:'short'}).format(d);};
   function runtimeStatus(){
     const line=document.getElementById('update-status-line');
-    if(line) line.textContent=`Última actualización: ${fmtVerification(UP.last_verification)}`;
+    if(!line)return;
+    const latest=UP.latest_data_period||'sin periodo identificado';
+    const verified=UP.last_verification?fmtVerification(UP.last_verification):'sin verificación registrada';
+    line.textContent=`Último periodo de información: ${latest} · Última verificación técnica: ${verified}`;
   }
 
   function summary(){
-    const pibVivienda=D.activity.pib_total.at(-1);
-    const pibViviendaShare=D.activity.participation.at(-1);
-    const enoeRows=(D.labor.enoe_quarterly||[]).filter(x=>/^20\d{2}-T[1-4]$/.test(x.period||''));
-    const enoeLast=enoeRows.at(-1)||{period:'2026-T2',total:4841.023};
+    const pibRows=(D.activity.years||[]).map((year,i)=>({year,pib:D.activity.pib_total?.[i],share:D.activity.participation?.[i]})).filter(x=>Number.isFinite(x.year)&&Number.isFinite(x.pib)).sort((a,b)=>a.year-b.year);
+    const pibLast=pibRows.at(-1)||{};
+    const pibVivienda=pibLast.pib;
+    const pibViviendaShare=pibLast.share;
+    const enoeRows=(D.labor.enoe_quarterly||[]).filter(x=>/^20\d{2}-T[1-4]$/.test(x.period||'')&&Number.isFinite(x.total)).sort((a,b)=>a.period.localeCompare(b.period));
+    const enoeLast=enoeRows.at(-1)||{};
+    const shfRows=(D.prices.shf_quarterly||[]).filter(x=>/^20\d{2}-T[1-4]$/.test(x.period||'')&&Number.isFinite(x.yoy)).sort((a,b)=>a.period.localeCompare(b.period));
+    const shfLast=shfRows.at(-1)||{};
+    const tenure=D.conditions.tenure||{};
     document.getElementById('page-summary').innerHTML=U.pageHead('Resumen ejecutivo','Lectura rápida de los principales indicadores. Cada recuadro explica qué mide y muestra su unidad.','Cortes dinámicos según última observación disponible')+
     `<div class="kpis">
-      ${U.kpi(`PIB de vivienda · ${D.activity.years?.at(-1)||'N/D'}`,F.mdp(pibVivienda),`${F.pct(pibViviendaShare)} del PIB nacional`,'mdp','El PIB (Producto Interno Bruto) de vivienda, estimado en la Cuenta Satélite de Vivienda de México, representa el valor económico generado por las actividades vinculadas con la vivienda.')}
-      ${U.kpi(`Empleos en construcción · ENOE · ${fmtQuarter(enoeLast.period)}`,F.millionsFromThousands(enoeLast.total),'','millones de empleos en construcción','La ENOE (Encuesta Nacional de Ocupación y Empleo) aproxima el número de personas ocupadas cuya actividad principal es la construcción.')}
-      ${U.kpi(`Índice SHF · ${fmtQuarter(D.prices.current?.yoy_period)||D.prices.current?.yoy_period||'N/D'}`,F.pct(D.prices.current?.yoy),'variación anual','porcentaje','El Índice SHF de Precios de la Vivienda, elaborado por la Sociedad Hipotecaria Federal (SHF), mide la apreciación o depreciación de viviendas adquiridas mediante crédito hipotecario con características comparables. El dato mostrado corresponde a su variación anual.')}
-      ${U.kpi(`Vivienda propia + pagándose · ${D.conditions.tenure?.year||'N/D'}`,F.pct(D.conditions.tenure?.own_plus_paying),'del total de viviendas','porcentaje de viviendas','La ENIGH (Encuesta Nacional de Ingresos y Gastos de los Hogares) permite identificar la proporción de viviendas propias —incluidas las que aún se están pagando— respecto del total de viviendas habitadas.')}
+      ${U.kpi(`PIB de vivienda · ${pibLast.year||'N/D'}`,F.mdp(pibVivienda),Number.isFinite(pibViviendaShare)?`${F.pct(pibViviendaShare)} del PIB nacional`:'participación no disponible','mdp','Fuente: INEGI, Cuenta Satélite de Vivienda. El PIB (Producto Interno Bruto) de vivienda, estimado en la Cuenta Satélite de Vivienda de México, representa el valor económico generado por las actividades vinculadas con la vivienda.')}
+      ${U.kpi(`Empleos en construcción · ENOE · ${fmtQuarter(enoeLast.period)}`,F.millionsFromThousands(enoeLast.total),'última observación trimestral disponible','millones de empleos en construcción','Fuente: INEGI, ENOE. La ENOE (Encuesta Nacional de Ocupación y Empleo) aproxima el número de personas ocupadas cuya actividad principal es la construcción.')}
+      ${U.kpi(`Índice SHF · ${fmtQuarter(shfLast.period)}`,F.pct(shfLast.yoy),'variación anual · última observación disponible','porcentaje','Fuente: Sociedad Hipotecaria Federal (SHF). El Índice SHF de Precios de la Vivienda, elaborado por la Sociedad Hipotecaria Federal (SHF), mide la apreciación o depreciación de viviendas adquiridas mediante crédito hipotecario con características comparables. El dato mostrado corresponde a su variación anual.')}
+      ${U.kpi(`Vivienda propia + pagándose · ${tenure.year||'N/D'}`,F.pct(tenure.own_plus_paying),'del total de viviendas · último levantamiento disponible','porcentaje de viviendas','Fuente: INEGI, ENIGH. La ENIGH (Encuesta Nacional de Ingresos y Gastos de los Hogares) permite identificar la proporción de viviendas propias —incluidas las que aún se están pagando— respecto del total de viviendas habitadas.')}
     </div>
     <div class="grid">
       ${U.card('sum-employment','Empleo en construcción y ocupación total',`ENOE · millones de personas · trimestral · hasta ${fmtQuarter(enoeLast.period)}`,`<strong>Qué mide:</strong> compara la población ocupada en construcción (eje izquierdo) con la población ocupada total del país (eje derecho). <div class="note">Ambas series son observaciones trimestrales ENOE; no se mensualizan ni se interpolan.</div>`)}
@@ -193,13 +201,12 @@
     const firstYear=(D.conditions.tenure_history?.years||histYears||[])[0]||2016;
     document.getElementById('page-conditions').innerHTML=U.pageHead('Condiciones habitacionales','Indicadores para entender la tenencia de la vivienda y las carencias habitacionales.',`INEGI · ENIGH · CONAVI · ${firstYear}–${Math.max(Number(condYear)||0,Number(tenureYear)||0)||'N/D'}`)+
     `<div class="kpis">
-      ${U.kpi(`Vivienda propia + pagándose · ${D.conditions.tenure?.year||'N/D'}`,F.pct(t.own_plus_paying),'del total de viviendas habitadas','porcentaje de viviendas','La ENIGH (Encuesta Nacional de Ingresos y Gastos de los Hogares) permite identificar la proporción de viviendas propias —incluidas las que aún se están pagando— respecto del total de viviendas habitadas.')}
+      ${U.kpi(`Vivienda propia + pagándose · ${D.conditions.tenure?.year||'N/D'}`,F.pct(t.own_plus_paying),'del total de viviendas habitadas','porcentaje de viviendas','Fuente: INEGI, ENIGH. La ENIGH (Encuesta Nacional de Ingresos y Gastos de los Hogares) permite identificar la proporción de viviendas propias —incluidas las que aún se están pagando— respecto del total de viviendas habitadas.')}
       ${U.kpi(`Vivienda rentada · ${tenureYear}`,F.pct(t.rented),'del total de viviendas habitadas','porcentaje de viviendas','La ENIGH permite identificar la proporción de viviendas cuyos ocupantes pagan una renta por habitarlas.')}
       ${U.kpi(`Carencia por calidad y espacios · ${condYear}`,F.pct(D.conditions.deprivation.quality_space_2024),'de la población presenta esta carencia','porcentaje de la población','La carencia por calidad y espacios identifica población que habita viviendas con materiales, hacinamiento u otras condiciones insuficientes conforme a la medición de pobreza multidimensional.')}
       ${U.kpi(`Carencia por servicios básicos · ${condYear}`,F.pct(D.conditions.deprivation.basic_services_2024),'de la población presenta esta carencia','porcentaje de la población','La carencia por acceso a servicios básicos identifica población que habita viviendas sin acceso suficiente a servicios considerados en la medición de pobreza multidimensional.')}
     </div>
     <div class="grid">
-      ${U.card('cond-sniiv-rezago','Rezago y necesidad de vivienda · SNIIV',`Viviendas estimadas · ${(Object.keys(D.conditions.sniiv||{}).sort()).join(', ')}`,'<strong>Fuente:</strong> SNIIV / Sedatu. Se presentan necesidad de vivienda y rezago habitacional como estimaciones distintas; no deben sumarse ni confundirse con el déficit cualitativo de CONAVI.') }
       ${U.card('cond-history','Histórico de carencias habitacionales',`Porcentaje de la población · ${histYears.join(', ')}`,'<strong>Qué mide:</strong> evolución de la carencia por calidad y espacios y de la carencia por acceso a servicios básicos. <div class="note">Los levantamientos son bienales; se muestran únicamente los años observados, sin interpolación.</div>')}
       ${U.card('cond-needs-history',`Déficit cualitativo · ${D.conditions.summary_year||condYear}`,'Componentes del déficit · porcentaje de viviendas','<strong>Qué mide:</strong> porcentaje de viviendas que presentan necesidades de mejoramiento por <b>materiales</b>, <b>espacios</b> o <b>servicios</b>. <div class="note">Una misma vivienda puede presentar más de un tipo de necesidad; por ello las barras no deben sumarse. Esta gráfica se mantiene separada de las carencias de población.</div>')}
       ${U.card('cond-tenure-compare','Evolución de la tenencia de la vivienda',`Porcentaje de viviendas · ENIGH · ${(D.conditions.tenure_history?.years||[]).join(', ')}`,'<strong>Qué mide:</strong> composición histórica de la tenencia en cuatro grupos comparables: propia totalmente pagada, propia pagándose, rentada y otros. <div class="note"><b>Otros</b> agrupa prestada, intestada o en litigio y otra situación. Las barras suman 100% en cada levantamiento.</div>')}
@@ -244,7 +251,8 @@
     const stats=(UP.validation||{}).stats||{};
     document.getElementById('page-updates').innerHTML=U.pageHead('Cortes de información','Referencia temporal y trazabilidad de los indicadores mostrados en el tablero.','Actualización por fuente')+
     `<div class="info-strip">
-      ${info('Última actualización',`<b>${fmtVerification(UP.last_verification)}</b>.`)}
+      ${info('Último periodo de información',`<b>${UP.latest_data_period||'No identificado'}</b>.`)}
+      ${info('Última verificación técnica',`<b>${fmtVerification(UP.last_verification)}</b>.`)}
       ${info('Control de publicación','Una descarga nueva no sustituye un dato aprobado hasta pasar validaciones de estructura, unidad, universo y consistencia.')}
       ${info('Validación de archivos',`Observaciones en base maestra: <b>${stats.series_rows??'N/D'}</b>. Entidades del mapa: <b>${stats.map_entities??'N/D'}</b>. Errores: <b>${stats.errors??0}</b>; advertencias: <b>${stats.warnings??0}</b>.`)}
     </div>
