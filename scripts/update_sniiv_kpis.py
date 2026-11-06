@@ -60,6 +60,12 @@ def main():
     rows=[
       {'indicador':'ruv_inventory','valor':round(inv_total),'periodo':f'{iy:04d}-{im:02d}-{id_:02d}','fuente':'SEDATU / SNIIV · Inventario de vivienda'},
       {'indicador':'financing_total','valor':round(actions),'periodo':f'{fy:04d}-{fm:02d}-{fd:02d}','fuente':'SEDATU / SNIIV · Financiamientos'}]
+    # Los KPIs específicos de CONAVI se actualizan por el workflow semanal.
+    # Preservarlos al reconstruir mensualmente los dos indicadores SNIIV.
+    if OUT.exists():
+        with OUT.open(encoding='utf-8-sig',newline='') as f:
+            previous=list(csv.DictReader(f))
+        rows.extend(r for r in previous if r.get('indicador') not in {'ruv_inventory','financing_total'})
     tmp=OUT.with_suffix('.csv.tmp')
     with tmp.open('w',encoding='utf-8-sig',newline='') as f:
         w=csv.DictWriter(f,fieldnames=['indicador','valor','periodo','fuente']);w.writeheader();w.writerows(rows)
