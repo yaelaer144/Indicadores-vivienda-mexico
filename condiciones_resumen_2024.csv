@@ -10,3 +10,267 @@
 2024,deficit_materiales_viviendas,7787805,viviendas,CONAVI
 2024,deficit_espacios_viviendas,5066448,viviendas,CONAVI
 2024,deficit_servicios_viviendas,5182841,viviendas,CONAVI
+2022,sniiv_necesidad_vivienda_nacional,414535,viviendas,SNIIV · Déficit de vivienda 2022 · Total Nacional
+2022,sniiv_rezago_habitacional_nacional,9154126,viviendas,SNIIV · Déficit de vivienda 2022 · Total Nacional
+2022,sniiv_deficit_hogares_nacional,9568661,hogares,SNIIV · Déficit de vivienda 2022 · Total Nacional
+2022,sniiv_deficit_personas_nacional,34644263,personas,SNIIV · Déficit de vivienda 2022 · Total Nacional
+2022,sniiv_necesidad_vivienda_ent_01,4067,viviendas,SNIIV · Déficit de vivienda 2022 · Aguascalientes
+2022,sniiv_rezago_habitacional_ent_01,26322,viviendas,SNIIV · Déficit de vivienda 2022 · Aguascalientes
+2022,sniiv_deficit_hogares_ent_01,30389,hogares,SNIIV · Déficit de vivienda 2022 · Aguascalientes
+2022,sniiv_deficit_personas_ent_01,130519,personas,SNIIV · Déficit de vivienda 2022 · Aguascalientes
+2022,sniiv_necesidad_vivienda_ent_02,3272,viviendas,SNIIV · Déficit de vivienda 2022 · Baja California
+2022,sniiv_rezago_habitacional_ent_02,500796,viviendas,SNIIV · Déficit de vivienda 2022 · Baja California
+2022,sniiv_deficit_hogares_ent_02,504068,hogares,SNIIV · Déficit de vivienda 2022 · Baja California
+2022,sniiv_deficit_personas_ent_02,1649222,personas,SNIIV · Déficit de vivienda 2022 · Baja California
+2022,sniiv_necesidad_vivienda_ent_03,1742,viviendas,SNIIV · Déficit de vivienda 2022 · Baja California Sur
+2022,sniiv_rezago_habitacional_ent_03,67449,viviendas,SNIIV · Déficit de vivienda 2022 · Baja California Sur
+2022,sniiv_deficit_hogares_ent_03,69191,hogares,SNIIV · Déficit de vivienda 2022 · Baja California Sur
+2022,sniiv_deficit_personas_ent_03,221180,personas,SNIIV · Déficit de vivienda 2022 · Baja California Sur
+2022,sniiv_necesidad_vivienda_ent_04,1198,viviendas,SNIIV · Déficit de vivienda 2022 · Campeche
+2022,sniiv_rezago_habitacional_ent_04,128193,viviendas,SNIIV · Déficit de vivienda 2022 · Campeche
+2022,sniiv_deficit_hogares_ent_04,129391,hogares,SNIIV · Déficit de vivienda 2022 · Campeche
+2022,sniiv_deficit_personas_ent_04,476207,personas,SNIIV · Déficit de vivienda 2022 · Campeche
+2022,sniiv_necesidad_vivienda_ent_05,3643,viviendas,SNIIV · Déficit de vivienda 2022 · Coahuila de Zaragoza
+2022,sniiv_rezago_habitacional_ent_05,118381,viviendas,SNIIV · Déficit de vivienda 2022 · Coahuila de Zaragoza
+2022,sniiv_deficit_hogares_ent_05,122024,hogares,SNIIV · Déficit de vivienda 2022 · Coahuila de Zaragoza
+2022,sniiv_deficit_personas_ent_05,424999,personas,SNIIV · Déficit de vivienda 2022 · Coahuila de Zaragoza
+2022,sniiv_necesidad_vivienda_ent_06,1172,viviendas,SNIIV · Déficit de vivienda 2022 · Colima
+2022,sniiv_rezago_habitacional_ent_06,51619,viviendas,SNIIV · Déficit de vivienda 2022 · Colima
+2022,sniiv_deficit_hogares_ent_06,52791,hogares,SNIIV · Déficit de vivienda 2022 · Colima
+2022,sniiv_deficit_personas_ent_06,174874,personas,SNIIV · Déficit de vivienda 2022 · Colima
+2022,sniiv_necesidad_vivienda_ent_07,6649,viviendas,SNIIV · Déficit de vivienda 2022 · Chiapas
+2022,sniiv_rezago_habitacional_ent_07,1011404,viviendas,SNIIV · Déficit de vivienda 2022 · Chiapas
+2022,sniiv_deficit_hogares_ent_07,1018053,hogares,SNIIV · Déficit de vivienda 2022 · Chiapas
+2022,sniiv_deficit_personas_ent_07,4167525,personas,SNIIV · Déficit de vivienda 2022 · Chiapas
+2022,sniiv_necesidad_vivienda_ent_08,1776,viviendas,SNIIV · Déficit de vivienda 2022 · Chihuahua
+2022,sniiv_rezago_habitacional_ent_08,433348,viviendas,SNIIV · Déficit de vivienda 2022 · Chihuahua
+2022,sniiv_deficit_hogares_ent_08,435124,hogares,SNIIV · Déficit de vivienda 2022 · Chihuahua
+2022,sniiv_deficit_personas_ent_08,1420926,personas,SNIIV · Déficit de vivienda 2022 · Chihuahua
+2022,sniiv_necesidad_vivienda_ent_09,37782,viviendas,SNIIV · Déficit de vivienda 2022 · Ciudad de México
+2022,sniiv_rezago_habitacional_ent_09,179537,viviendas,SNIIV · Déficit de vivienda 2022 · Ciudad de México
+2022,sniiv_deficit_hogares_ent_09,217319,hogares,SNIIV · Déficit de vivienda 2022 · Ciudad de México
+2022,sniiv_deficit_personas_ent_09,764972,personas,SNIIV · Déficit de vivienda 2022 · Ciudad de México
+2022,sniiv_necesidad_vivienda_ent_10,4334,viviendas,SNIIV · Déficit de vivienda 2022 · Durango
+2022,sniiv_rezago_habitacional_ent_10,104710,viviendas,SNIIV · Déficit de vivienda 2022 · Durango
+2022,sniiv_deficit_hogares_ent_10,109044,hogares,SNIIV · Déficit de vivienda 2022 · Durango
+2022,sniiv_deficit_personas_ent_10,433303,personas,SNIIV · Déficit de vivienda 2022 · Durango
+2022,sniiv_necesidad_vivienda_ent_11,44969,viviendas,SNIIV · Déficit de vivienda 2022 · Guanajuato
+2022,sniiv_rezago_habitacional_ent_11,234267,viviendas,SNIIV · Déficit de vivienda 2022 · Guanajuato
+2022,sniiv_deficit_hogares_ent_11,279236,hogares,SNIIV · Déficit de vivienda 2022 · Guanajuato
+2022,sniiv_deficit_personas_ent_11,1107956,personas,SNIIV · Déficit de vivienda 2022 · Guanajuato
+2022,sniiv_necesidad_vivienda_ent_12,13063,viviendas,SNIIV · Déficit de vivienda 2022 · Guerrero
+2022,sniiv_rezago_habitacional_ent_12,547413,viviendas,SNIIV · Déficit de vivienda 2022 · Guerrero
+2022,sniiv_deficit_hogares_ent_12,560476,hogares,SNIIV · Déficit de vivienda 2022 · Guerrero
+2022,sniiv_deficit_personas_ent_12,2070788,personas,SNIIV · Déficit de vivienda 2022 · Guerrero
+2022,sniiv_necesidad_vivienda_ent_13,9098,viviendas,SNIIV · Déficit de vivienda 2022 · Hidalgo
+2022,sniiv_rezago_habitacional_ent_13,163224,viviendas,SNIIV · Déficit de vivienda 2022 · Hidalgo
+2022,sniiv_deficit_hogares_ent_13,172322,hogares,SNIIV · Déficit de vivienda 2022 · Hidalgo
+2022,sniiv_deficit_personas_ent_13,615655,personas,SNIIV · Déficit de vivienda 2022 · Hidalgo
+2022,sniiv_necesidad_vivienda_ent_14,47350,viviendas,SNIIV · Déficit de vivienda 2022 · Jalisco
+2022,sniiv_rezago_habitacional_ent_14,227370,viviendas,SNIIV · Déficit de vivienda 2022 · Jalisco
+2022,sniiv_deficit_hogares_ent_14,274720,hogares,SNIIV · Déficit de vivienda 2022 · Jalisco
+2022,sniiv_deficit_personas_ent_14,1007508,personas,SNIIV · Déficit de vivienda 2022 · Jalisco
+2022,sniiv_necesidad_vivienda_ent_15,59600,viviendas,SNIIV · Déficit de vivienda 2022 · México
+2022,sniiv_rezago_habitacional_ent_15,670252,viviendas,SNIIV · Déficit de vivienda 2022 · México
+2022,sniiv_deficit_hogares_ent_15,729852,hogares,SNIIV · Déficit de vivienda 2022 · México
+2022,sniiv_deficit_personas_ent_15,2667499,personas,SNIIV · Déficit de vivienda 2022 · México
+2022,sniiv_necesidad_vivienda_ent_16,30074,viviendas,SNIIV · Déficit de vivienda 2022 · Michoacán de Ocampo
+2022,sniiv_rezago_habitacional_ent_16,420980,viviendas,SNIIV · Déficit de vivienda 2022 · Michoacán de Ocampo
+2022,sniiv_deficit_hogares_ent_16,451054,hogares,SNIIV · Déficit de vivienda 2022 · Michoacán de Ocampo
+2022,sniiv_deficit_personas_ent_16,1646611,personas,SNIIV · Déficit de vivienda 2022 · Michoacán de Ocampo
+2022,sniiv_necesidad_vivienda_ent_17,5536,viviendas,SNIIV · Déficit de vivienda 2022 · Morelos
+2022,sniiv_rezago_habitacional_ent_17,128500,viviendas,SNIIV · Déficit de vivienda 2022 · Morelos
+2022,sniiv_deficit_hogares_ent_17,134036,hogares,SNIIV · Déficit de vivienda 2022 · Morelos
+2022,sniiv_deficit_personas_ent_17,474636,personas,SNIIV · Déficit de vivienda 2022 · Morelos
+2022,sniiv_necesidad_vivienda_ent_18,2371,viviendas,SNIIV · Déficit de vivienda 2022 · Nayarit
+2022,sniiv_rezago_habitacional_ent_18,86006,viviendas,SNIIV · Déficit de vivienda 2022 · Nayarit
+2022,sniiv_deficit_hogares_ent_18,88377,hogares,SNIIV · Déficit de vivienda 2022 · Nayarit
+2022,sniiv_deficit_personas_ent_18,330888,personas,SNIIV · Déficit de vivienda 2022 · Nayarit
+2022,sniiv_necesidad_vivienda_ent_19,19224,viviendas,SNIIV · Déficit de vivienda 2022 · Nuevo León
+2022,sniiv_rezago_habitacional_ent_19,145554,viviendas,SNIIV · Déficit de vivienda 2022 · Nuevo León
+2022,sniiv_deficit_hogares_ent_19,164778,hogares,SNIIV · Déficit de vivienda 2022 · Nuevo León
+2022,sniiv_deficit_personas_ent_19,530037,personas,SNIIV · Déficit de vivienda 2022 · Nuevo León
+2022,sniiv_necesidad_vivienda_ent_20,9055,viviendas,SNIIV · Déficit de vivienda 2022 · Oaxaca
+2022,sniiv_rezago_habitacional_ent_20,658743,viviendas,SNIIV · Déficit de vivienda 2022 · Oaxaca
+2022,sniiv_deficit_hogares_ent_20,667798,hogares,SNIIV · Déficit de vivienda 2022 · Oaxaca
+2022,sniiv_deficit_personas_ent_20,2429296,personas,SNIIV · Déficit de vivienda 2022 · Oaxaca
+2022,sniiv_necesidad_vivienda_ent_21,10799,viviendas,SNIIV · Déficit de vivienda 2022 · Puebla
+2022,sniiv_rezago_habitacional_ent_21,444729,viviendas,SNIIV · Déficit de vivienda 2022 · Puebla
+2022,sniiv_deficit_hogares_ent_21,455528,hogares,SNIIV · Déficit de vivienda 2022 · Puebla
+2022,sniiv_deficit_personas_ent_21,1818367,personas,SNIIV · Déficit de vivienda 2022 · Puebla
+2022,sniiv_necesidad_vivienda_ent_22,16612,viviendas,SNIIV · Déficit de vivienda 2022 · Querétaro
+2022,sniiv_rezago_habitacional_ent_22,82725,viviendas,SNIIV · Déficit de vivienda 2022 · Querétaro
+2022,sniiv_deficit_hogares_ent_22,99337,hogares,SNIIV · Déficit de vivienda 2022 · Querétaro
+2022,sniiv_deficit_personas_ent_22,356378,personas,SNIIV · Déficit de vivienda 2022 · Querétaro
+2022,sniiv_necesidad_vivienda_ent_23,3723,viviendas,SNIIV · Déficit de vivienda 2022 · Quintana Roo
+2022,sniiv_rezago_habitacional_ent_23,103818,viviendas,SNIIV · Déficit de vivienda 2022 · Quintana Roo
+2022,sniiv_deficit_hogares_ent_23,107541,hogares,SNIIV · Déficit de vivienda 2022 · Quintana Roo
+2022,sniiv_deficit_personas_ent_23,433196,personas,SNIIV · Déficit de vivienda 2022 · Quintana Roo
+2022,sniiv_necesidad_vivienda_ent_24,9842,viviendas,SNIIV · Déficit de vivienda 2022 · San Luis Potosí
+2022,sniiv_rezago_habitacional_ent_24,172598,viviendas,SNIIV · Déficit de vivienda 2022 · San Luis Potosí
+2022,sniiv_deficit_hogares_ent_24,182440,hogares,SNIIV · Déficit de vivienda 2022 · San Luis Potosí
+2022,sniiv_deficit_personas_ent_24,659913,personas,SNIIV · Déficit de vivienda 2022 · San Luis Potosí
+2022,sniiv_necesidad_vivienda_ent_25,6233,viviendas,SNIIV · Déficit de vivienda 2022 · Sinaloa
+2022,sniiv_rezago_habitacional_ent_25,84236,viviendas,SNIIV · Déficit de vivienda 2022 · Sinaloa
+2022,sniiv_deficit_hogares_ent_25,90469,hogares,SNIIV · Déficit de vivienda 2022 · Sinaloa
+2022,sniiv_deficit_personas_ent_25,351922,personas,SNIIV · Déficit de vivienda 2022 · Sinaloa
+2022,sniiv_necesidad_vivienda_ent_26,2983,viviendas,SNIIV · Déficit de vivienda 2022 · Sonora
+2022,sniiv_rezago_habitacional_ent_26,275498,viviendas,SNIIV · Déficit de vivienda 2022 · Sonora
+2022,sniiv_deficit_hogares_ent_26,278481,hogares,SNIIV · Déficit de vivienda 2022 · Sonora
+2022,sniiv_deficit_personas_ent_26,930955,personas,SNIIV · Déficit de vivienda 2022 · Sonora
+2022,sniiv_necesidad_vivienda_ent_27,5081,viviendas,SNIIV · Déficit de vivienda 2022 · Tabasco
+2022,sniiv_rezago_habitacional_ent_27,454234,viviendas,SNIIV · Déficit de vivienda 2022 · Tabasco
+2022,sniiv_deficit_hogares_ent_27,459315,hogares,SNIIV · Déficit de vivienda 2022 · Tabasco
+2022,sniiv_deficit_personas_ent_27,1641586,personas,SNIIV · Déficit de vivienda 2022 · Tabasco
+2022,sniiv_necesidad_vivienda_ent_28,11336,viviendas,SNIIV · Déficit de vivienda 2022 · Tamaulipas
+2022,sniiv_rezago_habitacional_ent_28,181600,viviendas,SNIIV · Déficit de vivienda 2022 · Tamaulipas
+2022,sniiv_deficit_hogares_ent_28,192936,hogares,SNIIV · Déficit de vivienda 2022 · Tamaulipas
+2022,sniiv_deficit_personas_ent_28,646921,personas,SNIIV · Déficit de vivienda 2022 · Tamaulipas
+2022,sniiv_necesidad_vivienda_ent_29,5706,viviendas,SNIIV · Déficit de vivienda 2022 · Tlaxcala
+2022,sniiv_rezago_habitacional_ent_29,38617,viviendas,SNIIV · Déficit de vivienda 2022 · Tlaxcala
+2022,sniiv_deficit_hogares_ent_29,44323,hogares,SNIIV · Déficit de vivienda 2022 · Tlaxcala
+2022,sniiv_deficit_personas_ent_29,192029,personas,SNIIV · Déficit de vivienda 2022 · Tlaxcala
+2022,sniiv_necesidad_vivienda_ent_30,22933,viviendas,SNIIV · Déficit de vivienda 2022 · Veracruz de Ignacio de la llave
+2022,sniiv_rezago_habitacional_ent_30,1212340,viviendas,SNIIV · Déficit de vivienda 2022 · Veracruz de Ignacio de la llave
+2022,sniiv_deficit_hogares_ent_30,1235273,hogares,SNIIV · Déficit de vivienda 2022 · Veracruz de Ignacio de la llave
+2022,sniiv_deficit_personas_ent_30,4042086,personas,SNIIV · Déficit de vivienda 2022 · Veracruz de Ignacio de la llave
+2022,sniiv_necesidad_vivienda_ent_31,9408,viviendas,SNIIV · Déficit de vivienda 2022 · Yucatán
+2022,sniiv_rezago_habitacional_ent_31,106248,viviendas,SNIIV · Déficit de vivienda 2022 · Yucatán
+2022,sniiv_deficit_hogares_ent_31,115656,hogares,SNIIV · Déficit de vivienda 2022 · Yucatán
+2022,sniiv_deficit_personas_ent_31,474839,personas,SNIIV · Déficit de vivienda 2022 · Yucatán
+2022,sniiv_necesidad_vivienda_ent_32,3904,viviendas,SNIIV · Déficit de vivienda 2022 · Zacatecas
+2022,sniiv_rezago_habitacional_ent_32,93415,viviendas,SNIIV · Déficit de vivienda 2022 · Zacatecas
+2022,sniiv_deficit_hogares_ent_32,97319,hogares,SNIIV · Déficit de vivienda 2022 · Zacatecas
+2022,sniiv_deficit_personas_ent_32,351470,personas,SNIIV · Déficit de vivienda 2022 · Zacatecas
+2024,sniiv_necesidad_vivienda_nacional,348380,viviendas,SNIIV · Déficit de vivienda 2024 · Total Nacional
+2024,sniiv_rezago_habitacional_nacional,8507353,viviendas,SNIIV · Déficit de vivienda 2024 · Total Nacional
+2024,sniiv_deficit_hogares_nacional,8855733,hogares,SNIIV · Déficit de vivienda 2024 · Total Nacional
+2024,sniiv_deficit_personas_nacional,31399500,personas,SNIIV · Déficit de vivienda 2024 · Total Nacional
+2024,sniiv_necesidad_vivienda_ent_01,4336,viviendas,SNIIV · Déficit de vivienda 2024 · Aguascalientes
+2024,sniiv_rezago_habitacional_ent_01,17044,viviendas,SNIIV · Déficit de vivienda 2024 · Aguascalientes
+2024,sniiv_deficit_hogares_ent_01,21380,hogares,SNIIV · Déficit de vivienda 2024 · Aguascalientes
+2024,sniiv_deficit_personas_ent_01,90076,personas,SNIIV · Déficit de vivienda 2024 · Aguascalientes
+2024,sniiv_necesidad_vivienda_ent_02,1803,viviendas,SNIIV · Déficit de vivienda 2024 · Baja California
+2024,sniiv_rezago_habitacional_ent_02,475316,viviendas,SNIIV · Déficit de vivienda 2024 · Baja California
+2024,sniiv_deficit_hogares_ent_02,477119,hogares,SNIIV · Déficit de vivienda 2024 · Baja California
+2024,sniiv_deficit_personas_ent_02,1511321,personas,SNIIV · Déficit de vivienda 2024 · Baja California
+2024,sniiv_necesidad_vivienda_ent_03,2209,viviendas,SNIIV · Déficit de vivienda 2024 · Baja California Sur
+2024,sniiv_rezago_habitacional_ent_03,61444,viviendas,SNIIV · Déficit de vivienda 2024 · Baja California Sur
+2024,sniiv_deficit_hogares_ent_03,63653,hogares,SNIIV · Déficit de vivienda 2024 · Baja California Sur
+2024,sniiv_deficit_personas_ent_03,211855,personas,SNIIV · Déficit de vivienda 2024 · Baja California Sur
+2024,sniiv_necesidad_vivienda_ent_04,1721,viviendas,SNIIV · Déficit de vivienda 2024 · Campeche
+2024,sniiv_rezago_habitacional_ent_04,118237,viviendas,SNIIV · Déficit de vivienda 2024 · Campeche
+2024,sniiv_deficit_hogares_ent_04,119958,hogares,SNIIV · Déficit de vivienda 2024 · Campeche
+2024,sniiv_deficit_personas_ent_04,423832,personas,SNIIV · Déficit de vivienda 2024 · Campeche
+2024,sniiv_necesidad_vivienda_ent_05,4986,viviendas,SNIIV · Déficit de vivienda 2024 · Coahuila de Zaragoza
+2024,sniiv_rezago_habitacional_ent_05,88260,viviendas,SNIIV · Déficit de vivienda 2024 · Coahuila de Zaragoza
+2024,sniiv_deficit_hogares_ent_05,93246,hogares,SNIIV · Déficit de vivienda 2024 · Coahuila de Zaragoza
+2024,sniiv_deficit_personas_ent_05,310390,personas,SNIIV · Déficit de vivienda 2024 · Coahuila de Zaragoza
+2024,sniiv_necesidad_vivienda_ent_06,1279,viviendas,SNIIV · Déficit de vivienda 2024 · Colima
+2024,sniiv_rezago_habitacional_ent_06,55900,viviendas,SNIIV · Déficit de vivienda 2024 · Colima
+2024,sniiv_deficit_hogares_ent_06,57179,hogares,SNIIV · Déficit de vivienda 2024 · Colima
+2024,sniiv_deficit_personas_ent_06,183087,personas,SNIIV · Déficit de vivienda 2024 · Colima
+2024,sniiv_necesidad_vivienda_ent_07,7994,viviendas,SNIIV · Déficit de vivienda 2024 · Chiapas
+2024,sniiv_rezago_habitacional_ent_07,1029381,viviendas,SNIIV · Déficit de vivienda 2024 · Chiapas
+2024,sniiv_deficit_hogares_ent_07,1037375,hogares,SNIIV · Déficit de vivienda 2024 · Chiapas
+2024,sniiv_deficit_personas_ent_07,4019086,personas,SNIIV · Déficit de vivienda 2024 · Chiapas
+2024,sniiv_necesidad_vivienda_ent_08,1679,viviendas,SNIIV · Déficit de vivienda 2024 · Chihuahua
+2024,sniiv_rezago_habitacional_ent_08,443590,viviendas,SNIIV · Déficit de vivienda 2024 · Chihuahua
+2024,sniiv_deficit_hogares_ent_08,445269,hogares,SNIIV · Déficit de vivienda 2024 · Chihuahua
+2024,sniiv_deficit_personas_ent_08,1441845,personas,SNIIV · Déficit de vivienda 2024 · Chihuahua
+2024,sniiv_necesidad_vivienda_ent_09,50336,viviendas,SNIIV · Déficit de vivienda 2024 · Ciudad de México
+2024,sniiv_rezago_habitacional_ent_09,184279,viviendas,SNIIV · Déficit de vivienda 2024 · Ciudad de México
+2024,sniiv_deficit_hogares_ent_09,234615,hogares,SNIIV · Déficit de vivienda 2024 · Ciudad de México
+2024,sniiv_deficit_personas_ent_09,789643,personas,SNIIV · Déficit de vivienda 2024 · Ciudad de México
+2024,sniiv_necesidad_vivienda_ent_10,3994,viviendas,SNIIV · Déficit de vivienda 2024 · Durango
+2024,sniiv_rezago_habitacional_ent_10,107273,viviendas,SNIIV · Déficit de vivienda 2024 · Durango
+2024,sniiv_deficit_hogares_ent_10,111267,hogares,SNIIV · Déficit de vivienda 2024 · Durango
+2024,sniiv_deficit_personas_ent_10,442595,personas,SNIIV · Déficit de vivienda 2024 · Durango
+2024,sniiv_necesidad_vivienda_ent_11,32491,viviendas,SNIIV · Déficit de vivienda 2024 · Guanajuato
+2024,sniiv_rezago_habitacional_ent_11,228528,viviendas,SNIIV · Déficit de vivienda 2024 · Guanajuato
+2024,sniiv_deficit_hogares_ent_11,261019,hogares,SNIIV · Déficit de vivienda 2024 · Guanajuato
+2024,sniiv_deficit_personas_ent_11,963075,personas,SNIIV · Déficit de vivienda 2024 · Guanajuato
+2024,sniiv_necesidad_vivienda_ent_12,9176,viviendas,SNIIV · Déficit de vivienda 2024 · Guerrero
+2024,sniiv_rezago_habitacional_ent_12,489511,viviendas,SNIIV · Déficit de vivienda 2024 · Guerrero
+2024,sniiv_deficit_hogares_ent_12,498687,hogares,SNIIV · Déficit de vivienda 2024 · Guerrero
+2024,sniiv_deficit_personas_ent_12,1898736,personas,SNIIV · Déficit de vivienda 2024 · Guerrero
+2024,sniiv_necesidad_vivienda_ent_13,5104,viviendas,SNIIV · Déficit de vivienda 2024 · Hidalgo
+2024,sniiv_rezago_habitacional_ent_13,158326,viviendas,SNIIV · Déficit de vivienda 2024 · Hidalgo
+2024,sniiv_deficit_hogares_ent_13,163430,hogares,SNIIV · Déficit de vivienda 2024 · Hidalgo
+2024,sniiv_deficit_personas_ent_13,594208,personas,SNIIV · Déficit de vivienda 2024 · Hidalgo
+2024,sniiv_necesidad_vivienda_ent_14,35073,viviendas,SNIIV · Déficit de vivienda 2024 · Jalisco
+2024,sniiv_rezago_habitacional_ent_14,206587,viviendas,SNIIV · Déficit de vivienda 2024 · Jalisco
+2024,sniiv_deficit_hogares_ent_14,241660,hogares,SNIIV · Déficit de vivienda 2024 · Jalisco
+2024,sniiv_deficit_personas_ent_14,813232,personas,SNIIV · Déficit de vivienda 2024 · Jalisco
+2024,sniiv_necesidad_vivienda_ent_15,51047,viviendas,SNIIV · Déficit de vivienda 2024 · México
+2024,sniiv_rezago_habitacional_ent_15,537477,viviendas,SNIIV · Déficit de vivienda 2024 · México
+2024,sniiv_deficit_hogares_ent_15,588524,hogares,SNIIV · Déficit de vivienda 2024 · México
+2024,sniiv_deficit_personas_ent_15,2238011,personas,SNIIV · Déficit de vivienda 2024 · México
+2024,sniiv_necesidad_vivienda_ent_16,22131,viviendas,SNIIV · Déficit de vivienda 2024 · Michoacán de Ocampo
+2024,sniiv_rezago_habitacional_ent_16,399662,viviendas,SNIIV · Déficit de vivienda 2024 · Michoacán de Ocampo
+2024,sniiv_deficit_hogares_ent_16,421793,hogares,SNIIV · Déficit de vivienda 2024 · Michoacán de Ocampo
+2024,sniiv_deficit_personas_ent_16,1535818,personas,SNIIV · Déficit de vivienda 2024 · Michoacán de Ocampo
+2024,sniiv_necesidad_vivienda_ent_17,4012,viviendas,SNIIV · Déficit de vivienda 2024 · Morelos
+2024,sniiv_rezago_habitacional_ent_17,116558,viviendas,SNIIV · Déficit de vivienda 2024 · Morelos
+2024,sniiv_deficit_hogares_ent_17,120570,hogares,SNIIV · Déficit de vivienda 2024 · Morelos
+2024,sniiv_deficit_personas_ent_17,417157,personas,SNIIV · Déficit de vivienda 2024 · Morelos
+2024,sniiv_necesidad_vivienda_ent_18,2248,viviendas,SNIIV · Déficit de vivienda 2024 · Nayarit
+2024,sniiv_rezago_habitacional_ent_18,81464,viviendas,SNIIV · Déficit de vivienda 2024 · Nayarit
+2024,sniiv_deficit_hogares_ent_18,83712,hogares,SNIIV · Déficit de vivienda 2024 · Nayarit
+2024,sniiv_deficit_personas_ent_18,290473,personas,SNIIV · Déficit de vivienda 2024 · Nayarit
+2024,sniiv_necesidad_vivienda_ent_19,15150,viviendas,SNIIV · Déficit de vivienda 2024 · Nuevo León
+2024,sniiv_rezago_habitacional_ent_19,106603,viviendas,SNIIV · Déficit de vivienda 2024 · Nuevo León
+2024,sniiv_deficit_hogares_ent_19,121753,hogares,SNIIV · Déficit de vivienda 2024 · Nuevo León
+2024,sniiv_deficit_personas_ent_19,413145,personas,SNIIV · Déficit de vivienda 2024 · Nuevo León
+2024,sniiv_necesidad_vivienda_ent_20,5359,viviendas,SNIIV · Déficit de vivienda 2024 · Oaxaca
+2024,sniiv_rezago_habitacional_ent_20,619182,viviendas,SNIIV · Déficit de vivienda 2024 · Oaxaca
+2024,sniiv_deficit_hogares_ent_20,624541,hogares,SNIIV · Déficit de vivienda 2024 · Oaxaca
+2024,sniiv_deficit_personas_ent_20,2262763,personas,SNIIV · Déficit de vivienda 2024 · Oaxaca
+2024,sniiv_necesidad_vivienda_ent_21,8731,viviendas,SNIIV · Déficit de vivienda 2024 · Puebla
+2024,sniiv_rezago_habitacional_ent_21,407263,viviendas,SNIIV · Déficit de vivienda 2024 · Puebla
+2024,sniiv_deficit_hogares_ent_21,415994,hogares,SNIIV · Déficit de vivienda 2024 · Puebla
+2024,sniiv_deficit_personas_ent_21,1554003,personas,SNIIV · Déficit de vivienda 2024 · Puebla
+2024,sniiv_necesidad_vivienda_ent_22,17284,viviendas,SNIIV · Déficit de vivienda 2024 · Querétaro
+2024,sniiv_rezago_habitacional_ent_22,78201,viviendas,SNIIV · Déficit de vivienda 2024 · Querétaro
+2024,sniiv_deficit_hogares_ent_22,95485,hogares,SNIIV · Déficit de vivienda 2024 · Querétaro
+2024,sniiv_deficit_personas_ent_22,345070,personas,SNIIV · Déficit de vivienda 2024 · Querétaro
+2024,sniiv_necesidad_vivienda_ent_23,3015,viviendas,SNIIV · Déficit de vivienda 2024 · Quintana Roo
+2024,sniiv_rezago_habitacional_ent_23,75651,viviendas,SNIIV · Déficit de vivienda 2024 · Quintana Roo
+2024,sniiv_deficit_hogares_ent_23,78666,hogares,SNIIV · Déficit de vivienda 2024 · Quintana Roo
+2024,sniiv_deficit_personas_ent_23,310174,personas,SNIIV · Déficit de vivienda 2024 · Quintana Roo
+2024,sniiv_necesidad_vivienda_ent_24,13736,viviendas,SNIIV · Déficit de vivienda 2024 · San Luis Potosí
+2024,sniiv_rezago_habitacional_ent_24,140376,viviendas,SNIIV · Déficit de vivienda 2024 · San Luis Potosí
+2024,sniiv_deficit_hogares_ent_24,154112,hogares,SNIIV · Déficit de vivienda 2024 · San Luis Potosí
+2024,sniiv_deficit_personas_ent_24,530135,personas,SNIIV · Déficit de vivienda 2024 · San Luis Potosí
+2024,sniiv_necesidad_vivienda_ent_25,3435,viviendas,SNIIV · Déficit de vivienda 2024 · Sinaloa
+2024,sniiv_rezago_habitacional_ent_25,79736,viviendas,SNIIV · Déficit de vivienda 2024 · Sinaloa
+2024,sniiv_deficit_hogares_ent_25,83171,hogares,SNIIV · Déficit de vivienda 2024 · Sinaloa
+2024,sniiv_deficit_personas_ent_25,303530,personas,SNIIV · Déficit de vivienda 2024 · Sinaloa
+2024,sniiv_necesidad_vivienda_ent_26,5852,viviendas,SNIIV · Déficit de vivienda 2024 · Sonora
+2024,sniiv_rezago_habitacional_ent_26,266918,viviendas,SNIIV · Déficit de vivienda 2024 · Sonora
+2024,sniiv_deficit_hogares_ent_26,272770,hogares,SNIIV · Déficit de vivienda 2024 · Sonora
+2024,sniiv_deficit_personas_ent_26,909263,personas,SNIIV · Déficit de vivienda 2024 · Sonora
+2024,sniiv_necesidad_vivienda_ent_27,4018,viviendas,SNIIV · Déficit de vivienda 2024 · Tabasco
+2024,sniiv_rezago_habitacional_ent_27,479652,viviendas,SNIIV · Déficit de vivienda 2024 · Tabasco
+2024,sniiv_deficit_hogares_ent_27,483670,hogares,SNIIV · Déficit de vivienda 2024 · Tabasco
+2024,sniiv_deficit_personas_ent_27,1655375,personas,SNIIV · Déficit de vivienda 2024 · Tabasco
+2024,sniiv_necesidad_vivienda_ent_28,3451,viviendas,SNIIV · Déficit de vivienda 2024 · Tamaulipas
+2024,sniiv_rezago_habitacional_ent_28,130626,viviendas,SNIIV · Déficit de vivienda 2024 · Tamaulipas
+2024,sniiv_deficit_hogares_ent_28,134077,hogares,SNIIV · Déficit de vivienda 2024 · Tamaulipas
+2024,sniiv_deficit_personas_ent_28,426202,personas,SNIIV · Déficit de vivienda 2024 · Tamaulipas
+2024,sniiv_necesidad_vivienda_ent_29,3139,viviendas,SNIIV · Déficit de vivienda 2024 · Tlaxcala
+2024,sniiv_rezago_habitacional_ent_29,35152,viviendas,SNIIV · Déficit de vivienda 2024 · Tlaxcala
+2024,sniiv_deficit_hogares_ent_29,38291,hogares,SNIIV · Déficit de vivienda 2024 · Tlaxcala
+2024,sniiv_deficit_personas_ent_29,145925,personas,SNIIV · Déficit de vivienda 2024 · Tlaxcala
+2024,sniiv_necesidad_vivienda_ent_30,11167,viviendas,SNIIV · Déficit de vivienda 2024 · Veracruz de Ignacio de la llave
+2024,sniiv_rezago_habitacional_ent_30,1101865,viviendas,SNIIV · Déficit de vivienda 2024 · Veracruz de Ignacio de la llave
+2024,sniiv_deficit_hogares_ent_30,1113032,hogares,SNIIV · Déficit de vivienda 2024 · Veracruz de Ignacio de la llave
+2024,sniiv_deficit_personas_ent_30,3633042,personas,SNIIV · Déficit de vivienda 2024 · Veracruz de Ignacio de la llave
+2024,sniiv_necesidad_vivienda_ent_31,8731,viviendas,SNIIV · Déficit de vivienda 2024 · Yucatán
+2024,sniiv_rezago_habitacional_ent_31,100556,viviendas,SNIIV · Déficit de vivienda 2024 · Yucatán
+2024,sniiv_deficit_hogares_ent_31,109287,hogares,SNIIV · Déficit de vivienda 2024 · Yucatán
+2024,sniiv_deficit_personas_ent_31,424829,personas,SNIIV · Déficit de vivienda 2024 · Yucatán
+2024,sniiv_necesidad_vivienda_ent_32,3693,viviendas,SNIIV · Déficit de vivienda 2024 · Zacatecas
+2024,sniiv_rezago_habitacional_ent_32,86735,viviendas,SNIIV · Déficit de vivienda 2024 · Zacatecas
+2024,sniiv_deficit_hogares_ent_32,90428,hogares,SNIIV · Déficit de vivienda 2024 · Zacatecas
+2024,sniiv_deficit_personas_ent_32,311604,personas,SNIIV · Déficit de vivienda 2024 · Zacatecas

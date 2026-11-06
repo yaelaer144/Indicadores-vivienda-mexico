@@ -1,6 +1,6 @@
 {
   "group": "semiannual",
-  "run_at_utc": "2026-11-06T15:33:27.377846+00:00",
+  "run_at_utc": "2026-11-06T15:54:25.120199+00:00",
   "results": [
     {
       "script": "update_enigh_conditions.py",

@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-11-06T15:33:22.358067+00:00",
+  "checked_at_utc": "2026-11-06T15:54:18.420993+00:00",
   "tenencia": {
     "estado": "actualizado",
     "anio": 2024,
@@ -11,8 +11,23 @@
     "ultimo_anio": 2024
   },
   "conavi": {
-    "estado": "conservado_pendiente_fuente_estructurada",
-    "ultimo_anio": 2024,
-    "detalle": "CONAVI/SIESCO: se conserva el último valor; no se reemplazan indicadores por extracción ambigua de PDF"
+    "estado": "actualizado",
+    "anios": [
+      2022,
+      2024
+    ],
+    "registros_sniiv": 264,
+    "entidades_por_anio": {
+      "2022": 32,
+      "2024": 32
+    },
+    "indicadores": [
+      "nec_viv",
+      "rezago",
+      "deficit_h",
+      "deficit_p"
+    ],
+    "archivo_salida": "condiciones_resumen_2024.csv",
+    "nota": "Series SNIIV separadas de los indicadores cualitativos CONAVI; no se mezclan definiciones."
   }
 }
