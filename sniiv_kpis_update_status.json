@@ -1,6 +1,6 @@
 {
   "status": "ok",
-  "updated_at": "2026-11-05T15:26:51",
+  "updated_at": "2026-11-16T23:30:24",
   "rows": [
     {
       "indicador": "ruv_inventory",
@@ -13,6 +13,24 @@
       "valor": 616837,
       "periodo": "2026-08-31",
       "fuente": "SEDATU / SNIIV · Financiamientos"
+    },
+    {
+      "indicador": "pvb_conavi_housing",
+      "valor": "73490",
+      "periodo": "2026-11-12",
+      "fuente": "CONAVI / Presidencia · https://www.gob.mx/presidencia/articulos/version-estenografica-conferencia-de-prensa-de-la-presidenta-claudia-sheinbaum-pardo-del-15-de-junio-de-2026"
+    },
+    {
+      "indicador": "pvb_conavi_hectares",
+      "valor": "560",
+      "periodo": "2026-11-12",
+      "fuente": "CONAVI / Presidencia · https://www.gob.mx/presidencia/articulos/version-estenografica-conferencia-de-prensa-de-la-presidenta-claudia-sheinbaum-pardo-del-15-de-junio-de-2026"
+    },
+    {
+      "indicador": "pvb_conavi_predios",
+      "valor": "138",
+      "periodo": "2026-11-12",
+      "fuente": "CONAVI / Presidencia · https://www.gob.mx/presidencia/articulos/version-estenografica-conferencia-de-prensa-de-la-presidenta-claudia-sheinbaum-pardo-del-15-de-junio-de-2026"
     }
   ]
 }
