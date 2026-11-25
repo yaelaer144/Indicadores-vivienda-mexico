@@ -4,7 +4,7 @@
   "unidad": "millones de pesos anualizados a precios de 2018",
   "origen": "PIBT_actualizado.xlsx",
   "primero": "2016-T1",
-  "ultimo": "2026-T2",
-  "trimestres": 42,
-  "procesado_utc": "2026-10-28T18:58:11.871529+00:00"
+  "ultimo": "2026-T3",
+  "trimestres": 43,
+  "procesado_utc": "2026-11-25T23:15:49.376666+00:00"
 }
