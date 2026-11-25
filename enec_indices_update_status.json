@@ -1,6 +1,6 @@
 {
   "fuente": "INEGI ENEC 2018, índices originales",
-  "fecha_utc": "2026-11-24T02:32:20.256643+00:00",
+  "fecha_utc": "2026-11-25T00:04:16.579663+00:00",
   "series": {
     "personal_construccion": {
       "id": "720286",
@@ -8,8 +8,8 @@
       "unidad": "1051",
       "frecuencia": "8",
       "primero": "2016-01",
-      "ultimo": "2026-08",
-      "observaciones": 128
+      "ultimo": "2026-09",
+      "observaciones": 129
     },
     "personal_edificacion": {
       "id": "722171",
@@ -17,8 +17,8 @@
       "unidad": "1051",
       "frecuencia": "8",
       "primero": "2016-01",
-      "ultimo": "2026-08",
-      "observaciones": 128
+      "ultimo": "2026-09",
+      "observaciones": 129
     },
     "personal_obreros": {
       "id": "720290",
@@ -26,8 +26,8 @@
       "unidad": "1051",
       "frecuencia": "8",
       "primero": "2016-01",
-      "ultimo": "2026-08",
-      "observaciones": 128
+      "ultimo": "2026-09",
+      "observaciones": 129
     },
     "personal_administrativos": {
       "id": "720292",
@@ -35,8 +35,8 @@
       "unidad": "1051",
       "frecuencia": "8",
       "primero": "2016-01",
-      "ultimo": "2026-08",
-      "observaciones": 128
+      "ultimo": "2026-09",
+      "observaciones": 129
     },
     "horas_construccion": {
       "id": "720298",
@@ -44,8 +44,8 @@
       "unidad": "1051",
       "frecuencia": "8",
       "primero": "2016-01",
-      "ultimo": "2026-08",
-      "observaciones": 128
+      "ultimo": "2026-09",
+      "observaciones": 129
     },
     "horas_edificacion": {
       "id": "722195",
@@ -53,8 +53,8 @@
       "unidad": "1051",
       "frecuencia": "8",
       "primero": "2016-01",
-      "ultimo": "2026-08",
-      "observaciones": 128
+      "ultimo": "2026-09",
+      "observaciones": 129
     },
     "remuneraciones_construccion": {
       "id": "720318",
@@ -62,8 +62,8 @@
       "unidad": "1051",
       "frecuencia": "8",
       "primero": "2016-01",
-      "ultimo": "2026-08",
-      "observaciones": 128
+      "ultimo": "2026-09",
+      "observaciones": 129
     },
     "remuneraciones_edificacion": {
       "id": "722235",
@@ -71,8 +71,8 @@
       "unidad": "1051",
       "frecuencia": "8",
       "primero": "2016-01",
-      "ultimo": "2026-08",
-      "observaciones": 128
+      "ultimo": "2026-09",
+      "observaciones": 129
     }
   },
   "estado": "actualizado",
@@ -110,7 +110,7 @@
       "error_relativo_mediano": 0.0
     }
   },
-  "ultimo_periodo": "2026-08",
+  "ultimo_periodo": "2026-09",
   "primer_periodo": "2016-01",
-  "filas": 128
+  "filas": 129
 }
